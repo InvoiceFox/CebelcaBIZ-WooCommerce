@@ -21,3 +21,6 @@ www.invoicefox.com , www.invoicefox.co.nz , www.invoicefox.com.au , www.abelie.b
 * Add the options screen to WP Admin. 
 * Add functionality and options to download the PDF of invoice or send it via email. 
 
+###License
+
+GNU GPL v2
