@@ -8,8 +8,12 @@
 // THE CONFIGURATION
 
 $woocom_invfox__config = array(
-			       'API_KEY'=>"enter-your-api-key",
-			       'API_DOMAIN'=>"www.cebelca.biz"
+			       'API_KEY'=>"ENTER-YOUR-API-KEY", // you get it in InvoiceFox, on page "access" after you activate the API
+			       'API_DOMAIN'=>"www.cebelca.biz", // options: "www.invoicefox.com" "www.invoicefox.co.uk" "www.invoicefox.com.au" "www.cebelca.biz" "www.abelie.biz" 
+			       'APP_NAME'=>"Cebelca.biz",
+			       'make_invoices_or_proforma'=>"proforma", // options: "invoices" "proforma"
+			       'proforma_days_valid'=>10,
+			       'customer_general_payment_period'=>5
 			       );
 
 // END OF THE CONFIGURATION
@@ -29,8 +33,6 @@ function woocomm_invfox__woocommerce_order_status_completed( $order_id ) {
 
   $order = new WC_Order( $order_id );
 
-  $order->add_order_note('The invoice is being made in invoicefox.','woocom-invfox');
-
   woocomm_invfox__trace($order,0);
   
   $api = new InvfoxAPI($CONF['API_KEY'], $CONF['API_DOMAIN'], true);
@@ -45,11 +47,11 @@ function woocomm_invfox__woocommerce_order_status_completed( $order_id ) {
 				 'vatid' => "", // TODO -- find where the data is
 				 'phone' => $order->billing_phone, //$c->phone.($c->phone_mobile?", ":"").$c->phone_mobile,
 				 'website' => "",
-				 'email' => $order->billing_email, //$c->, // get email address, probalbly in some other table
+				 'email' => $order->billing_email,
 				 'notes' => '',
 				 'vatbound' => false,//!!$c->vat_number, TODO -- after (2)
 				 'custaddr' => '',
-				 'payment_period' => 5, //todo: make configurable
+				 'payment_period' => $CONF['customer_general_payment_period'],
 				 'street2' => ''
 				 ));
 
@@ -83,25 +85,47 @@ function woocomm_invfox__woocommerce_order_status_completed( $order_id ) {
     }
     /*      */
     woocomm_invfox__trace("============ INVFOX::before create invoice call ============");
-    $r2 = $api->createInvoice(
-			      array(
-				    'title' => $invid,
-				    'date_sent' => $date1,
-				    'date_to_pay' => $date1,
-				    'date_served' => $date1, // MAY NOT BE NULL IN SOME VERSIONS OF USER DBS
-				    'id_partner' => $clientId,
-				    'taxnum' => '-'
-				    ),
-			      $body2
-			      );
+    if ($CONF['make_invoices_or_estimates'] == 'invoices') {
+      $r2 = $api->createInvoice(
+				array(
+				      'title' => $invid,
+				      'date_sent' => $date1,
+				      'date_to_pay' => $date1,
+				      'date_served' => $date1, // MAY NOT BE NULL IN SOME VERSIONS OF USER DBS
+				      'id_partner' => $clientId,
+				      'taxnum' => '-'
+				      ),
+				$body2
+				);
+      if ($r2->isOk()) {    
+	$invA = $r2->getData();
+	$order->add_order_note("Invoice No. {$invA[0]['title']} was created at {$CONF['APP_NAME']}.",'woocom-invfox');
+      } 
+      // TODO ... add notification / alert in case of erro
+    } elseif ($CONF['make_invoices_or_proforma'] == 'proforma') {
+      $r2 = $api->createProFormaInvoice(
+					array(
+					      'title' => $invid,
+					      'date_sent' => $date1,
+					      'days_valid' => $CONF['proforma_days_valid'],
+					      'id_partner' => $clientId,
+					      'taxnum' => '-'
+					      ),
+					$body2
+					);
+      if ($r2->isOk()) {    
+	$invA = $r2->getData();
+	$order->add_order_note("ProForma Invoice No. {$invA[0]['title']} was created at {$CONF['APP_NAME']}.",'woocom-invfox');
+      } 
+      // TODO ... add notification / alert in case of erro
+    }
+    woocomm_invfox__trace($r2);	
     woocomm_invfox__trace("============ INVFOX::after create invoice ============");	
   }
-  
-  $order->add_order_note('Invoice in InvoiceFox was created.','woocom-invfox');
-  
+    
   return true;
 }
-  
+
 
 
 add_action( 'woocommerce_order_status_completed',
