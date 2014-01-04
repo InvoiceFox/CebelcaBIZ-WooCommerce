@@ -10,7 +10,7 @@ The first alpha version.
 
 * Copy the *woocomm-invfox* folder to *./wordpress/wp-content/plugins/*.
 * Go to *admin > plugins > installed plugins* and Activate *WooCommerce+InvoiceFox*.
-* Press *edit* adn setup your API_KEY and API_DOMAIN. You get your API key in InvoiceFox under *Access*. 
+* Press *edit* and setup your API_KEY and API_DOMAIN. You get your API key in InvoiceFox under *Access*. 
  
 ###Where does this work
 
