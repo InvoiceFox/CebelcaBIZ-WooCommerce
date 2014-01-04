@@ -39,6 +39,25 @@ class InvfoxAPI {
     return $res;
   }
 
+  function createProFormaInvoice($header, $body) {
+    $res = $this->api->call('preinvoice', 'insert-smart', $header);
+    //		print_r($res);
+    if ($res->isErr()) {
+      echo 'error' . $res->getErr();
+    } else {
+      foreach ($body as $bl) {
+	$resD = $res->getData();
+	//print_r($resD);
+	$bl['id_preinvoice'] = $resD[0]['id'];
+	$res2 = $this->api->call('preinvoice-b', 'insert-into', $bl);
+	if ($res2->isErr()) {
+	  echo 'error' . $res->getErr();
+	} 
+      }
+    }
+    return $res;
+  }
+
   function downloadPDF($id) {
     echo $id;
     $opts = array(
