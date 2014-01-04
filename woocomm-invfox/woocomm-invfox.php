@@ -8,7 +8,7 @@
 // THE CONFIGURATION
 
 $woocom_invfox__config = array(
-			       'API_KEY'=>"db8**********************************dt1",
+			       'API_KEY'=>"enter-your-api-key",
 			       'API_DOMAIN'=>"www.cebelca.biz"
 			       );
 
