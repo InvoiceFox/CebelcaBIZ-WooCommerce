@@ -3,11 +3,12 @@
   Plugin Name: WooCommerce+InvoiceFox
 */
 
+// Status: Alpha
 
 // THE CONFIGURATION
 
 $woocom_invfox__config = array(
-			       'API_KEY'=>"db8jtivpq1c190g6783erow6s7fh4vf5cuyandtk",
+			       'API_KEY'=>"db8**********************************dt1",
 			       'API_DOMAIN'=>"www.cebelca.biz"
 			       );
 
