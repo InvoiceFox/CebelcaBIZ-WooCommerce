@@ -11,9 +11,10 @@ $woocom_invfox__config = array(
 			       'API_KEY'=>"ENTER-YOUR-API-KEY", // you get it in InvoiceFox, on page "access" after you activate the API
 			       'API_DOMAIN'=>"www.cebelca.biz", // options: "www.invoicefox.com" "www.invoicefox.co.uk" "www.invoicefox.com.au" "www.cebelca.biz" "www.abelie.biz" 
 			       'APP_NAME'=>"Cebelca.biz",
-			       'make_invoices_or_proforma'=>"proforma", // options: "invoices" "proforma"
+			       'make_invoice_or_proforma'=>"proforma", // options: "invoice" "proforma"
 			       'proforma_days_valid'=>10,
-			       'customer_general_payment_period'=>5
+			       'customer_general_payment_period'=>5,
+			       'add_post_content_in_item_descr'=>false
 			       );
 
 // END OF THE CONFIGURATION
@@ -74,7 +75,7 @@ function woocomm_invfox__woocommerce_order_status_completed( $order_id ) {
 	woocomm_invfox__trace($item,0);
 	$product = $order->get_product_from_item( $item );
 	$body2[] = array(
-			 'title' => $product->post->post_title."\n".$product->post->post_content,
+			 'title' => $product->post->post_title.($CONF['add_post_content_in_item_descr']?"\n".$product->post->post_content:""),
 			 'qty' => $item['qty'],
 			 'mu' => '',
 			 'price' => round($item['line_total'] / $item['qty'], 2),
@@ -85,7 +86,7 @@ function woocomm_invfox__woocommerce_order_status_completed( $order_id ) {
     }
     /*      */
     woocomm_invfox__trace("============ INVFOX::before create invoice call ============");
-    if ($CONF['make_invoices_or_estimates'] == 'invoices') {
+    if ($CONF['make_invoice_or_proforma'] == 'invoice') {
       $r2 = $api->createInvoice(
 				array(
 				      'title' => $invid,
@@ -102,7 +103,7 @@ function woocomm_invfox__woocommerce_order_status_completed( $order_id ) {
 	$order->add_order_note("Invoice No. {$invA[0]['title']} was created at {$CONF['APP_NAME']}.",'woocom-invfox');
       } 
       // TODO ... add notification / alert in case of erro
-    } elseif ($CONF['make_invoices_or_proforma'] == 'proforma') {
+    } elseif ($CONF['make_invoice_or_proforma'] == 'proforma') {
       $r2 = $api->createProFormaInvoice(
 					array(
 					      'title' => $invid,
