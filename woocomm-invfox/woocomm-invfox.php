@@ -8,7 +8,7 @@
 // THE CONFIGURATION
 
 $woocom_invfox__config = array(
-			       'API_KEY'=>"7ef9tcjvbrs30kcdmgf5r2d8y6shpnu42wazo11c", // you get it in InvoiceFox, on page "access" after you activate the API
+			       'API_KEY'=>"ENTER-YOUR-API-KEY", // you get it in InvoiceFox/Cebelca/Abelie/..., on page "access" after you activate the API
 			       'API_DOMAIN'=>"www.cebelca.biz", // options: "www.invoicefox.com" "www.invoicefox.co.uk" "www.invoicefox.com.au" "www.cebelca.biz" "www.abelie.biz" 
 			       'APP_NAME'=>"Cebelca.biz",
 			       'make_invoice_or_proforma'=>"invoice", // options: "invoice" "proforma"
