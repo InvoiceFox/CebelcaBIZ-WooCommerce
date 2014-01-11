@@ -50,7 +50,7 @@ class StrpcAPI {
     $r = array();
     foreach ($array as $key => $val)
       {
-	$r[] = "$key=$val";
+	$r[] = urlencode($key)."=".urlencode($val);
       }
     return $startWith . implode($delim, $r);
   }

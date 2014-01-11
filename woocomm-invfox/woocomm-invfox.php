@@ -8,13 +8,15 @@
 // THE CONFIGURATION
 
 $woocom_invfox__config = array(
-			       'API_KEY'=>"ENTER-YOUR-API-KEY", // you get it in InvoiceFox, on page "access" after you activate the API
+			       'API_KEY'=>"7ef9tcjvbrs30kcdmgf5r2d8y6shpnu42wazo11c", // you get it in InvoiceFox, on page "access" after you activate the API
 			       'API_DOMAIN'=>"www.cebelca.biz", // options: "www.invoicefox.com" "www.invoicefox.co.uk" "www.invoicefox.com.au" "www.cebelca.biz" "www.abelie.biz" 
 			       'APP_NAME'=>"Cebelca.biz",
 			       'make_invoice_or_proforma'=>"invoice", // options: "invoice" "proforma"
 			       'proforma_days_valid'=>10,
 			       'customer_general_payment_period'=>5,
-			       'add_post_content_in_item_descr'=>false
+			       'add_post_content_in_item_descr'=>false,
+			       'partial_sum_label'=>'Skupaj', // Empty for no partial sum line
+			       'round_calculated_taxrate_to'=>0
 			       );
 
 // END OF THE CONFIGURATION
@@ -79,11 +81,35 @@ function woocomm_invfox__woocommerce_order_status_completed( $order_id ) {
 			 'qty' => $item['qty'],
 			 'mu' => '',
 			 'price' => round($item['line_total'] / $item['qty'], 2),
-			 'vat' => round($item['line_tax'] / $item['line_total'] * 100, 2),
+			 'vat' => round($item['line_tax'] / $item['line_total'] * 100, $CONF['round_calculated_taxrate_to']),
 			 'discount' => 0
 			 );
       }
     }
+    
+    if ($order->order_shipping > 0) {
+      woocomm_invfox__trace("============ INVFOX:: adding shipping ============");
+      if ($CONF['partial_sum_label']) {
+	$body2[] = array(
+			 'title' => "= ".$CONF['partial_sum_label'],
+			 'qty' => 1,
+			 'mu' => '',
+			 'price' => 0,
+			 'vat' => 0,
+			 'discount' => 0
+			 );
+      }
+
+      $body2[] = array(
+		       'title' => $order->shipping_method_title,
+		       'qty' => 1,
+		       'mu' => '',
+		       'price' => $order->order_shipping,
+		       'vat' => round($order->order_shipping_tax / $order->order_shipping * 100,  $CONF['round_calculated_taxrate_to']),
+		       'discount' => 0
+		       );
+    }
+    
     /*      */
     woocomm_invfox__trace("============ INVFOX::before create invoice call ============");
     if ($CONF['make_invoice_or_proforma'] == 'invoice') {
@@ -94,7 +120,8 @@ function woocomm_invfox__woocommerce_order_status_completed( $order_id ) {
 				      'date_to_pay' => $date1,
 				      'date_served' => $date1, // MAY NOT BE NULL IN SOME VERSIONS OF USER DBS
 				      'id_partner' => $clientId,
-				      'taxnum' => '-'
+				      'taxnum' => '-',
+				      'doctype' => 0
 				      ),
 				$body2
 				);
