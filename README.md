@@ -10,7 +10,9 @@ The first alpha version.
 
 * Copy the *woocomm-invfox* folder to *./wordpress/wp-content/plugins/*.
 * Go to *admin > plugins > installed plugins* and Activate *WooCommerce+InvoiceFox*.
-* Press *edit* and setup your API_KEY and API_DOMAIN. You get your API key in InvoiceFox under *Access*. 
+* Press *edit* on the plugin page or open the invfox-woocomm/invfox-woocomm.php file and setup your API_KEY and API_DOMAIN. You get your API key in InvoiceFox under *Access*. There are other setting there that you can customize. You can for example create preinvoices or invoices, use partial sums to separate shipping costs from products, etc...
+ 
+The setup interface for WP admin is the next thing on our roadmap.
  
 ###Where does this work
 
