@@ -98,7 +98,7 @@ function woocomm_invfox__woocommerce_order_status_completed( $order_id ) {
       }
     }
     
-    if ($CONF['document_to_make'] != i'nventory' && $order->order_shipping > 0) {
+    if ($CONF['document_to_make'] != 'inventory' && $order->order_shipping > 0) {
       woocomm_invfox__trace("============ INVFOX:: adding shipping ============");
       if ($CONF['partial_sum_label']) {
 	$body2[] = array(
