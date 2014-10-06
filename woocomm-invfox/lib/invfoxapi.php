@@ -97,7 +97,7 @@ class InvfoxAPI {
     }
   }
 
-  function markPayed() {
+  function markPayed($id) {
     $res = $this->api->call('invoice-sent', 'mark-payed', array('id' => $id));
     if ($res->isErr()) {
       echo 'error' . $res->getErr();
