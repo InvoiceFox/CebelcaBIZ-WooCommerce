@@ -77,7 +77,7 @@ class InvfoxAPI {
     return $res;
   }
 
-  function downloadPDF($id) {
+  function downloadPDF($id, $path) {
     echo $id;
     $opts = array(
 		  'http'=>array(
@@ -85,14 +85,14 @@ class InvfoxAPI {
 				'header'=>"Authorization: Basic ".base64_encode($this->api->apitoken.':x')."\r\n" 
 				)
 		  );
-    echo "https://www.invoicefox.com/API-pdf?id=$id&res=invoice-sent&format=pdf&doctitle=Invoice%20No.&lang=en&res=invoice-sent";
+    echo "https://{$this->api->domain}/API-pdf?id=$id&res=invoice-sent&format=pdf&doctitle=Invoice%20No.&lang=en&res=invoice-sent";
     $context = stream_context_create($opts);
-    $data = file_get_contents("https://www.invoicefox.com/API-pdf?id=$id&res=invoice-sent&format=PDF&doctitle=Invoice%20No.&lang=en", false, $context);
+    $data = file_get_contents("https://{$this->api->domain}/API-pdf?id=$id&res=invoice-sent&format=PDF&doctitle=Invoice%20No.&lang=si", false, $context);
 		
     if ($data === false) {
       echo 'error downloading PDF';
     } else {
-      $file = "../invoices/".$id.".pdf";
+      $file = $path."/".$id.".pdf";
       file_put_contents($file, $data);
     }
   }
