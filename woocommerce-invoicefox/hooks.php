@@ -160,7 +160,7 @@ function woocomm_invfox__woocommerce_order_status_completed( $order_id ) {
     } elseif ($CONF['document_to_make'] == 'inventory') {
       $r2 = $api->createInventorySale(
 					array(
-					      'title' => $invid,
+					      'docnum' => $invid,
 					      'date_created' => $date1,
 					      'id_contact_to' => $clientId,
 					      'id_contact_from' => $CONF['from_warehouse_id'],
@@ -171,7 +171,7 @@ function woocomm_invfox__woocommerce_order_status_completed( $order_id ) {
 					);
       if ($r2->isOk()) {    
 	$invA = $r2->getData();
-	$order->add_order_note("Inventory sales document No. {$invA[0]['title']} was created at {$CONF['APP_NAME']}.",'woocom-invfox');
+	$order->add_order_note("Inventory sales document No. {$invA[0]['docnum']} was created at {$CONF['APP_NAME']}.",'woocom-invfox');
       } 
     }
     woocomm_invfox__trace($r2);	
