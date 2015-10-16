@@ -3,7 +3,7 @@
  * Plugin Name: WooCommerce InvoiceFox integration
  * Plugin URI: 
  * Description: Connects WooCommerce to InvoiceFox/Cebelca.biz for invoicing and optionally inventory
- * Version: 0.0.3
+ * Version: 0.0.4
  * Author: JankoITM
  * Author URI: http://refaktorlabs.com
  * Developer: Janko M.
@@ -35,8 +35,9 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
      */
     public function __construct() {
       add_action( 'plugins_loaded', array( $this, 'init' ) );
-      add_action( 'woocommerce_order_status_completed',
-		  array($this, '_woocommerce_order_status_completed'));
+      // this in for on status complete action
+      //      add_action( 'woocommerce_order_status_completed',
+      // array($this, '_woocommerce_order_status_completed'));
       add_action( 'woocommerce_order_actions', array( $this, 'add_order_meta_box_actions' ) );
       add_action( 'admin_notices', array( $this, 'admin_notices'));
       // process the custom order meta box order action
@@ -188,7 +189,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
     
 	$date1 = $api->_toSIDate(date('Y-m-d')); //// TODO LONGTERM ... figure out what we do with different Dates on api side (maybe date optionally accepts dbdate format)
 
-	$invid = $this->conf->use_shop_id_for_docnum ? str_pad($order->id, 5, "0", STR_PAD_LEFT) : "";
+	$invid = $this->conf['use_shop_id_for_docnum'] ? str_pad($order->id, 5, "0", STR_PAD_LEFT) : "";
     
 	$body2 = array();
 	/**/
@@ -251,7 +252,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 					  'taxnum' => '-',
 					  'doctype' => 0,
 					  'id_document_ext' => $order->id,
-					  'pub_notes' => $this->conf->order_num_label.' #'. $order->id
+					  'pub_notes' => $this->conf['order_num_label'].' #'. $order->id
 					  ),
 				    $body2
 				    );
@@ -269,7 +270,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 						  'days_valid' => $this->conf['proforma_days_valid'],
 						  'id_partner' => $clientId,
 						  'taxnum' => '-',
-						  'pub_notes' => $this->conf->order_num_label.' #'. $order->id
+						  'pub_notes' => $this->conf['order_num_label'].' #'. $order->id
 						  ),
 					    $body2
 					    );
@@ -288,7 +289,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 						'id_contact_from' => $this->conf['from_warehouse_id'],
 						'taxnum' => '-',
 						'doctype' => 1,
-						'pub_notes' => $this->conf->order_num_label.' #'. $order->id
+						'pub_notes' => $this->conf['order_num_label'].' #'. $order->id
 						),
 					  $body2
 					  );

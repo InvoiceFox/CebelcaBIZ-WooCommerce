@@ -1,18 +1,25 @@
 ##WooCommerce InvoiceFox integration
 
-This is a first version of WooCommerce plugin that automatically adds clients and creates invoices every time your WooCommerce orders are marked "completed".
+This is a WooCommerce plugin that can, based on an Order add client, invoice, pro forma invoice or inventory sales order to InvoiceFox/Cebelca.biz. You can also mark invoice paid from Order page and check if ordered items are on inventory (in case you are using an invoicefox inventory module).
 
 ###Status
 
-The first alpha version. 
+Used.
 
 ###Install & setup
 
-* Copy the *woocomm-invfox* folder to *./wordpress/wp-content/plugins/*.
+* Copy the *woocommerce-invoicefox* folder to *./wordpress/wp-content/plugins/*.
 * Go to *admin > plugins > installed plugins* and Activate *WooCommerce+InvoiceFox*.
-* Press *edit* on the plugin page or open the invfox-woocomm/invfox-woocomm.php file and setup your API_KEY and API_DOMAIN. You get your API key in InvoiceFox under *Access*. There are other setting there that you can customize. You can for example create preinvoices or invoices, use partial sums to separate shipping costs from products, etc...
- 
-The setup interface for WP admin is the next thing on our roadmap.
+* Go to WooCommerce / Settings / Integration / InvoiceFox page, to set it up.
+
+Use
+
+* Open Order on WooCommerce Orders page and additional Order Actions that you get when plugin is installed:
+** Create Invoice
+** Mark invoice paid
+** Create Proforma 
+** Check Items Inventory
+** Create Inventory Sales
  
 ###Where does this work
 
@@ -20,7 +27,6 @@ www.invoicefox.com , www.invoicefox.co.nz , www.invoicefox.com.au , www.abelie.b
 
 ###TODO
 
-* Add the options screen to WP Admin. 
 * Add functionality and options to download the PDF of invoice or send it via email. 
 
 ###License
