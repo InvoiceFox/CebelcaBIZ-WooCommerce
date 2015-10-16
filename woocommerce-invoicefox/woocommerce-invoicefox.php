@@ -195,13 +195,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 	/**/
 	foreach( $order->get_items() as $item ) {
 	  if ( 'line_item' == $item['type'] ) {
-	    woocomm_invfox__trace(".........................................::>>>>");
-	    woocomm_invfox__trace($item,0);
-	    woocomm_invfox__trace("<<<<::.........................................");
 	    $product = $order->get_product_from_item( $item );
-	    woocomm_invfox__trace("-----------------------------------------::>>>>");
-	    woocomm_invfox__trace($product,0);
-	    woocomm_invfox__trace("<<<<::-----------------------------------------");
 	    //woocomm_invfox__trace($product,0);
 	    //woocomm_invfox__trace($product->get_sku(),0);
 	    $body2[] = array(
