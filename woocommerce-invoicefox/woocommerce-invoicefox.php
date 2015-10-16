@@ -35,8 +35,8 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
      */
     public function __construct() {
       add_action( 'plugins_loaded', array( $this, 'init' ) );
-      add_action( 'woocommerce_order_status_completed',
-		  array($this, '_woocommerce_order_status_completed'));
+//      add_action( 'woocommerce_order_status_completed',
+//		  array($this, '_woocommerce_order_status_completed'));
       add_action( 'woocommerce_order_actions', array( $this, 'add_order_meta_box_actions' ) );
       add_action( 'admin_notices', array( $this, 'admin_notices'));
       // process the custom order meta box order action
