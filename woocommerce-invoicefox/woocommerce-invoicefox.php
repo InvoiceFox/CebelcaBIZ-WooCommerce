@@ -350,7 +350,7 @@ function woocomm_invfox_get_item_attributes($item) {
 
 	    if ( strpos($key, "pa_") !== false ) {
 
-		$res .= ($res === "" ? "" : "\n") . woocomm_invfox_prettify_slug(substr($key, 3)) . ": " . woocomm_invfox_pretify_slug($val) ;
+		$res .= ($res === "" ? "" : "\n") . woocomm_invfox_prettify_slug(substr($key, 3)) . ": " . woocomm_invfox_prettify_slug($val) ;
 
 	    }
 	}
