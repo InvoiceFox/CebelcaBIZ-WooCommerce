@@ -48,7 +48,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
       add_action( 'woocommerce_order_action_woocommerce_invoicefox_mark_invoice_paid', array( $this, 'process_custom_order_action_mark_invoice_paid' ) );
       $this->conf = get_option('woocommerce_invoicefox_settings');
       $translArr = array(0 => "invoice", 1 => "proforma", 2 => "inventory");
-      $this->conf['document_to_make'] = $translArr[$this->conf['document_to_make']];
+      // $this->conf['document_to_make'] = $translArr[$this->conf['document_to_make']];
       woocomm_invfox__trace("================ BEGIN ===============");
     }
     /**
@@ -357,7 +357,4 @@ function woocomm_invfox_get_item_attributes($item) {
 	return $res;
 }
 
-//print_r($formatted_attributes);
-
-return $formatted_attributes;
 ?>
