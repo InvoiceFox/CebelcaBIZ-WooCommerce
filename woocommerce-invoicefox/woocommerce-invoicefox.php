@@ -148,10 +148,8 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
       woocomm_invfox__trace("================ BEGIN ===============");
 
       //$order = new WC_Order( $order_id );
-      
-      woocomm_invfox__trace($this->conf, "settings");
-
-      woocomm_invfox__trace($order, "ORDER");
+      //woocomm_invfox__trace($this->conf, "settings");
+      //woocomm_invfox__trace($order, "ORDER");
       
       $api = new InvfoxAPI($this->conf['api_key'], $this->conf['api_domain'], true);
       $api->setDebugHook("woocomm_invfox__trace");
@@ -159,7 +157,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
       $vatNum = get_post_meta( $order->id, 'VAT Number', true );
 
 
-      woocomm_invfox__trace($vatNum, "vatnum");
+      //woocomm_invfox__trace($vatNum, "vatnum");
 
       $r = $api->assurePartner(array(
 				     'name' => $order->billing_first_name." ".$order->billing_last_name.($order->billing_company?", ":"").$order->billing_company,
@@ -178,11 +176,11 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 				     'street2' => ''
 				     ));
 
-      woocomm_invfox__trace("assured partner");
+      //woocomm_invfox__trace("assured partner");
       
       if ($r->isOk()) {
     
-	woocomm_invfox__trace("before creating document");
+	//woocomm_invfox__trace("before creating document");
     
 	$clientIdA = $r->getData();
 	$clientId = $clientIdA[0]['id'];
@@ -197,10 +195,16 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 	  if ( 'line_item' == $item['type'] ) {
 	    $product = $order->get_product_from_item( $item );
 	    //woocomm_invfox__trace($product,0);
-	    //woocomm_invfox__trace($product->get_sku(),0);
+	    //woocomm_invfox__trace(woocomm_invfox_get_attributes($product), "PROD ATTR");
+	    //woocomm_invfox__trace(woocomm_invfox_get_item_attributes($item), "ITEM ATTR");
+	    //woocomm_invfox__trace($item, "ITEMMMM");
+	    //woocomm_invfox__trace($this->conf['add_post_content_in_item_descr'], "SETUP101");
+	    $attributes_str = woocomm_invfox_get_item_attributes($item);
 	    $body2[] = array(
 			     'code' => $product->get_sku(),
-			     'title' => $product->post->post_title.($this->conf['add_post_content_in_item_descr']?"\n".$product->post->post_content:""),
+			     'title' => $product->post->post_title.
+				($attributes_str ? "\n".$attributes_str : "").
+				($this->conf['add_post_content_in_item_descr'] == "yes" ?"\n".$product->post->post_content:""),
 			     'qty' => $item['qty'],
 			     'mu' => '',
 			     'price' => round($item['line_total'] / $item['qty'], $this->conf['round_calculated_netprice_to']),
@@ -224,13 +228,16 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 	  }
 
 	  $body2[] = array(
-			   'title' => $order->shipping_method_title,
+			   'title' => $order->get_shipping_method(),
 			   'qty' => 1,
 			   'mu' => '',
 			   'price' => $order->order_shipping,
 			   'vat' => round($order->order_shipping_tax / $order->order_shipping * 100,  $this->conf['round_calculated_shipping_taxrate_to']),
 			   'discount' => 0
 			   );
+	  //woocomm_invfox__trace("================ BODY ===============");
+	  //woocomm_invfox__trace(print_r($body2, true));
+	  //woocomm_invfox__trace(print_r($order, true));
 	}
     
 	/*      */
@@ -301,4 +308,56 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
   }
   $WC_InvoiceFox = new WC_InvoiceFox( __FILE__ );
 }
+
+
+function woocomm_invfox_get_attributes($product) {
+
+	$formatted_attributes = array();
+
+	$attributes = $product->get_attributes();
+
+	foreach($attributes as $attr=>$attr_deets){
+
+	    $attribute_label = wc_attribute_label($attr);
+
+	    if ( isset( $attributes[ $attr ] ) || isset( $attributes[ 'pa_' . $attr ] ) ) {
+
+		$attribute = isset( $attributes[ $attr ] ) ? $attributes[ $attr ] : $attributes[ 'pa_' . $attr ];
+
+		if ( $attribute['is_taxonomy'] ) {
+
+		    $formatted_attributes[$attribute_label] = implode( ', ', wc_get_product_terms( $product->id, $attribute['name'], array( 'fields' => 'names' ) ) );
+
+		} else {
+
+		    $formatted_attributes[$attribute_label] = $attribute['value'];
+		}
+
+	    }
+	}
+	return $formatted_attributes;
+}
+
+function woocomm_invfox_prettify_slug($t) {
+	return str_replace("-", " ", ucfirst($t));
+}
+
+function woocomm_invfox_get_item_attributes($item) {
+
+	$res = "";
+
+	foreach($item as $key => $val) {
+
+	    if ( strpos($key, "pa_") !== false ) {
+
+		$res .= ($res === "" ? "" : "\n") . woocomm_invfox_prettify_slug(substr($key, 3)) . ": " . woocomm_invfox_pretify_slug($val) ;
+
+	    }
+	}
+	return $res;
+}
+
+//print_r($formatted_attributes);
+
+return $formatted_attributes;
 ?>
