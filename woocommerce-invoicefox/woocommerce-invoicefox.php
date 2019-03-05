@@ -337,7 +337,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 
 					if ( $r2->isOk() ) {
 						$invA = $r2->getData();
-						$order->add_order_note( "Invoice No. {$invA[0]['title']} was created at {$this->conf['app_name']}.", 'woocom-invfox' );
+						$order->add_order_note( "Invoice No. {$invA[0]['title']} was created at {$this->conf['app_name']}." );
 					}
 
 				} elseif ( $this->conf['document_to_make'] == 'invoice_complete' ) {
@@ -438,7 +438,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 
 						add_post_meta( $order->id, 'invoicefox_attached_pdf', $filename );
 
-						$order->add_order_note( "Invoice No. {$r3[0]['new_title']} was created at {$this->conf['app_name']}.", 'woocom-invfox' );
+						$order->add_order_note( "Invoice No. {$r3[0]['new_title']} was created at {$this->conf['app_name']}." );
 					}
 
 				} elseif ( $this->conf['document_to_make'] == 'proforma' ) {
@@ -455,7 +455,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 
 					if ( $r2->isOk() ) {
 						$invA = $r2->getData();
-						$order->add_order_note( "ProForma Invoice No. {$invA[0]['title']} was created at {$this->conf['app_name']}.", 'woocom-invfox' );
+						$order->add_order_note( "ProForma Invoice No. {$invA[0]['title']} was created at {$this->conf['app_name']}." );
 					}
 
 				} elseif ( $this->conf['document_to_make'] == 'inventory' ) {
@@ -473,7 +473,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 
 					if ( $r2->isOk() ) {
 						$invA = $r2->getData();
-						$order->add_order_note( "Inventory sales document No. {$invA[0]['title']} was created at {$this->conf['app_name']}.", 'woocom-invfox' );
+						$order->add_order_note( "Inventory sales document No. {$invA[0]['title']} was created at {$this->conf['app_name']}." );
 					}
 
 				}
