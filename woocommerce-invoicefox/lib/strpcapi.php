@@ -9,7 +9,7 @@ class StrpcAPI {
   
   static function trace($x) { echo $x; }
 
-  function StrpcAPI($token, $domain, $debugMode=false) {
+  function __construct($token, $domain, $debugMode=false) {
     $this->apitoken = $token;
     $this->domain = $domain;
     $this->debugMode = $debugMode;
@@ -62,7 +62,7 @@ class StrpcRes {
   
   var $res;
   
-  function StrpcRes($res) {
+  function __construct($res) {
     $this->res = $res;
   }
   
