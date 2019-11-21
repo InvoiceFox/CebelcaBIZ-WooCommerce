@@ -3,7 +3,7 @@ class InvfoxAPI {
 
   var $api;
 
-  function InvfoxAPI($apitoken, $apidomain, $debugMode=false) {
+  function __construct($apitoken, $apidomain, $debugMode=false) {
     $this->api = new StrpcAPI($apitoken, $apidomain, $debugMode);
   }
 
