@@ -144,7 +144,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 		}
 
 		function process_custom_order_action_invoice( $order ) {
-			$this->_make_document_in_invoicefox( $order, "invoice" );
+			$this->_make_document_in_invoicefox( $order, "invoice_draft" );
 		}
 
 		function process_custom_order_action_proforma( $order ) {
