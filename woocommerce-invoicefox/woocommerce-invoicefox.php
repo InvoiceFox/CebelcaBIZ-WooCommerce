@@ -406,7 +406,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
                         }
 
 						$uploads = wp_upload_dir();
-						$path    = $uploads['basedir'] . "/invoices";
+						$upload_path    = $uploads['basedir'] . "/invoices";
                         
 						//$filename = $api->downloadInvoicePDF( $order->id, $path );
 						$filename = $api->downloadPDF( 0, $order->id, $upload_path, 'invoice-sent', '' );
