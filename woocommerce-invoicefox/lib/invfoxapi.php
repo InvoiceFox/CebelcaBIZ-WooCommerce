@@ -90,7 +90,7 @@ class InvfoxAPI {
         )
       );
     $context = stream_context_create($opts);
-    $data = file_get_contents("https://{$this->api->domain}/API-pdf?id=$id&extid=$extid&res={$res}&format=PDF&doctitle=Invoice%20No.&lang=si&hstyle={$hstyle}", false, $context);
+    $data = file_get_contents("https://{$this->api->domain}/API-pdf?id=$id&extid=$extid&res={$res}&format=PDF&doctitle=Račun%20št.&lang=si&hstyle={$hstyle}", false, $context);
 
     if ($data === false) {
       echo 'error downloading PDF';

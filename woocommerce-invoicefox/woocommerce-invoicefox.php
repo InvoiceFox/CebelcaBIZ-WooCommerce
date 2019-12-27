@@ -437,8 +437,9 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 						*/
 
 						add_post_meta( $order->id, 'invoicefox_attached_pdf', $filename );
-
+						$order->save();
 						$order->add_order_note( "Invoice No. {$r3[0]['new_title']} was created at {$this->conf['app_name']}." );
+
 					}
 
 				} elseif ( $this->conf['document_to_make'] == 'proforma' ) {
