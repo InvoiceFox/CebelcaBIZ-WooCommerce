@@ -8,3 +8,6 @@ License: GPLv3 or later License
 URI: http://www.gnu.org/licenses/gpl-3.0.html
 WC requires at least: 3.8
 WC tested up to: 4.3
+
+Making PDF attachments work:
+	Include filter from functions_example.php in your theme's functions.php
