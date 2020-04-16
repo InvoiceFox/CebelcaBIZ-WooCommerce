@@ -290,7 +290,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 							'qty'      => $item['qty'],
 							'mu'       => '',
 							'price'    => round( $item['line_total'] / $item['qty'], $this->conf['round_calculated_netprice_to'] ),
-							'vat'      => round( $item['line_tax'] / $item['line_total'] * 100, $this->conf['round_calculated_taxrate_to'] ),
+							'vat'      => calculatePreciseSloVAT($item['line_total'], $item['line_tax']),
 							'discount' => 0
 						);
 					}
@@ -315,7 +315,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 						'qty'      => 1,
 						'mu'       => '',
 						'price'    => $order->order_shipping,
-						'vat'      => round( $order->order_shipping_tax / $order->order_shipping * 100, $this->conf['round_calculated_shipping_taxrate_to'] ),
+						'vat'      => calculatePreciseSloVAT($order->order_shipping, $order->order_shipping_tax),
 						'discount' => 0
 					);
 				}
@@ -581,6 +581,20 @@ function woocomm_invfox_get_item_attributes( $item ) {
 	}
 
 	return $res;
+}
+
+function calculatePreciseSloVAT($netPrice, $vatValue) {
+
+	$vatLevels = array(0, 5, 9.5, 22);
+	$vat1 = round( $vatValue / $netPrice * 100, 1);
+	$vat = -1;
+	foreach ($vatLevels as $vatLevel) {
+		if (abs($vat1 - $vatLevel) < 2.5) {
+			$vat = $vatLevel;
+		}
+	}
+	
+	return $vat;
 }
 
 ?>
