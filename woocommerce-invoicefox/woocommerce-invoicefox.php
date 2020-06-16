@@ -406,7 +406,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
                         }
 
 						$uploads = wp_upload_dir();
-						$path    = $uploads['basedir'] . "/invoices";
+						$upload_path    = $uploads['basedir'] . "/invoices";
                         
 						//$filename = $api->downloadInvoicePDF( $order->id, $path );
 						$filename = $api->downloadPDF( 0, $order->id, $upload_path, 'invoice-sent', '' );
@@ -437,8 +437,9 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 						*/
 
 						add_post_meta( $order->id, 'invoicefox_attached_pdf', $filename );
-
+						$order->save();
 						$order->add_order_note( "Invoice No. {$r3[0]['new_title']} was created at {$this->conf['app_name']}." );
+
 					}
 
 				} elseif ( $this->conf['document_to_make'] == 'proforma' ) {
