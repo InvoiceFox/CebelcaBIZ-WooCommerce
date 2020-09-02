@@ -67,6 +67,10 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 					$this,
 					'process_custom_order_action_proforma'
 				) );
+				add_action( 'woocommerce_order_action_woocommerce_invoicefox_create_advance', array(
+					$this,
+					'process_custom_order_action_advance'
+				) );
 				add_action( 'woocommerce_order_action_woocommerce_invoicefox_create_invt_sale', array(
 					$this,
 					'process_custom_order_action_invt_sale'
@@ -125,6 +129,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 			$actions['woocommerce_invoicefox_create_invoice']    = __( $this->conf['app_name'] . ': Make invoice', 'woocom-invfox' );
 			$actions['woocommerce_invoicefox_mark_invoice_paid'] = __( $this->conf['app_name'] . ': Mark invoice paid', 'woocom-invfox' );
 			$actions['woocommerce_invoicefox_create_proforma']   = __( $this->conf['app_name'] . ': Make proforma', 'woocom-invfox' );
+			$actions['woocommerce_invoicefox_create_advance']    = __( $this->conf['app_name'] . ': Make advance', 'woocom-invfox' );
 
 			//if ( $this->conf['use_inventory'] == "yes" ) {
             $actions['woocommerce_invoicefox_check_invt_items'] = __( $this->conf['app_name'] . ': Check inventory', 'woocom-invfox' );
@@ -149,6 +154,10 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 
 		function process_custom_order_action_proforma( $order ) {
 			$this->_make_document_in_invoicefox( $order, "proforma" );
+		}
+		
+		function process_custom_order_action_advance( $order ) {
+			$this->_make_document_in_invoicefox( $order, "advance_draft" );
 		}
 
 		function process_custom_order_action_invt_sale( $order ) {
@@ -320,7 +329,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 					);
 				}
 
-				if ( $this->conf['document_to_make'] == 'invoice_draft' ) {
+				if ( $this->conf['document_to_make'] == 'invoice_draft' || $this->conf['document_to_make'] == 'advance_draft' ) {
 					woocomm_invfox__trace( "before create invoice call" );
 
 					$r2 = $api->createInvoice( array(
@@ -330,7 +339,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 						'date_served'     => $date1, // MAY NOT BE NULL IN SOME VERSIONS OF USER DBS
 						'id_partner'      => $clientId,
 						'taxnum'          => '-',
-						'doctype'         => 0,
+						'doctype'         => $this->conf['document_to_make'] == 'advance_draft' ? 1 : 0,
 						'id_document_ext' => $order->id,
 						'pub_notes'       => $this->conf['order_num_label'] . ' #' . $order->get_order_number()
 					), $body2 );
