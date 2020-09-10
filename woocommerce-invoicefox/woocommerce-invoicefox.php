@@ -517,6 +517,8 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 		function _attach_invoice_pdf_to_email( $attachments, $status, $order ) {
 
 			if ( $this->conf['on_order_completed'] == "create_invoice_complete_email" ||
+			     $this->conf['on_order_completed'] == "create_invoice_complete_paid_email" ||
+			     $this->conf['on_order_completed'] == "create_invoice_complete_paid_inventory_email" ||
 			     $this->conf['on_order_completed'] == "email" ) {
 
                 woocomm_invfox__trace( "================ ATTACH FILTER CALLED  ===============" );
