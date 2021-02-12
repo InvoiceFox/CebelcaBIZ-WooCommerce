@@ -220,7 +220,6 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 		}
 
 		function _woocommerce_order_status_processing( $order ) {
-            error_log(" PRORPAOSPODAPSDOAPSDOAPS DOASPDO ASPD OAPDO ASPD OAS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 			if ( $this->conf['on_order_processing'] == "create_invoice_draft" ) {
 				$this->_make_document_in_invoicefox( $order, 'invoice_draft' );
 			}
@@ -229,16 +228,10 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 
 		function _woocommerce_order_status_completed( $order ) {
             error_log(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CALLED ON COMPLETED !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-            error_log(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CALLED ON COMPLETED !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-            error_log(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CALLED ON COMPLETED !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-            error_log(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CALLED ON COMPLETED !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-            error_log(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CALLED ON COMPLETED !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 
             if ( $this->conf['on_order_completed'] == "create_invoice_draft" ) {
-                            error_log("YOYOYOYOYOYYOYOYOYOxxx");
 				$this->_make_document_in_invoicefox( $order, 'invoice_draft' );
 			} else if ( strpos($this->conf['on_order_completed'], "create_invoice_complete") !== false) {
-                            error_log("YOYOYOYOYOYYOYOYOYOxxx");
               
               woocomm_invfox__trace( "================ BEFORE BEFORE ===============" );
               woocomm_invfox__trace( $this->conf['on_order_completed'] );
@@ -539,8 +532,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 
 				if ( isset( $status ) && in_array( $status, $allowed_statuses ) ) {
                     woocomm_invfox__trace( "================ ATTACH PDF TO EMAIL ===============" );
-					$iFox = new WC_Cebelcabiz();
-					$path = $iFox->_woocommerce_order_invoice_pdf( $order );
+					$path = $this->_woocommerce_order_invoice_pdf( $order );
 					$attachments[] = $path;
                     woocomm_invfox__trace( $attachments );
 				}
