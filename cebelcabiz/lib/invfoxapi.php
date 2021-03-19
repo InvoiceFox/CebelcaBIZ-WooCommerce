@@ -146,7 +146,8 @@ class InvfoxAPI {
                                                                           'docsubtype' => 0, 'doctype' => 1,
                                                                           'negate_qtys' => 0,
                                                                           'id_contact_from' => $from,
-                                                                          'id_contact_to' => $to));
+                                                                          'id_contact_to' => $to,
+                                                                          'combine_parts' => 0));
     
     if ($res->isErr()) {
       echo 'error' . $res->getErr();
