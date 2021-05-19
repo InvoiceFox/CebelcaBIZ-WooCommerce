@@ -253,6 +253,10 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 
 			$order = new WC_Order( $order_id );
 
+			if ($order->get_total() <= 0.0001) {
+				return true	
+			}
+			
 			if ( $document_to_make ) {
 				$this->conf['document_to_make'] = $document_to_make;
 			}
