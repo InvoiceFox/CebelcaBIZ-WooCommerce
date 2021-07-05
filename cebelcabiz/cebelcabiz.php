@@ -604,12 +604,12 @@ function woocomm_invfox_get_item_attributes( $item ) {
 }
 
 function calculatePreciseSloVAT($netPrice, $vatValue) {
-
-	$vatLevels = array(0, 5, 9.5, 22);
+	// because of new EU rules all EU VAT levels are valid here
+	$vatLevels = array(0, 5, 9.5, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27);
 	$vat1 = round( $vatValue / $netPrice * 100, 1);
 	$vat = -1;
 	foreach ($vatLevels as $vatLevel) {
-		if (abs($vat1 - $vatLevel) < 2.5) {
+		if (abs($vat1 - $vatLevel) < 0.5) {
 			$vat = $vatLevel;
 		}
 	}
