@@ -3,7 +3,7 @@
  * Plugin Name: Cebelca BIZ
  * Plugin URI:
  * Description: Connects WooCommerce to Cebelca.biz for invoicing and optionally inventory
- * Version: 0.0.91
+ * Version: 0.0.95
  * Author: JankoM
  * Author URI: http://refaktorlabs.com
  * Developer: Janko M.
@@ -22,7 +22,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 
 //	ini_set('display_errors', 1);
 	error_reporting(E_ALL ^ E_NOTICE);
-    ini_set("log_errors", 1);
+    	ini_set("log_errors", 1);
     
 	require_once( dirname( __FILE__ ) . '/lib/invfoxapi.php' );
 	require_once( dirname( __FILE__ ) . '/lib/strpcapi.php' );
@@ -314,6 +314,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 					}
 				}
 
+				// SHIPPING
 				if ( $this->conf['document_to_make'] != 'inventory' && $order->get_shipping_total() > 0 ) {
 					woocomm_invfox__trace( "adding shipping" );
 
@@ -337,7 +338,21 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 						'discount' => 0
 					);
 				}
-
+				
+				// FEES
+				foreach( $order->get_items('fee') as $item_id => $item_fee ){
+					$fee_total = $item_fee->get_total();
+					$fee_total_tax = $item_fee->get_total_tax();
+					$body2[] = array(
+						'title'    => $item_fee->get_name(),
+						'qty'      => 1,
+						'mu'       => '',
+						'price'    => $fee_total,
+						'vat'      => calculatePreciseSloVAT($fee_total, $fee_total_tax),
+						'discount' => 0
+					);
+				}
+				
 				if ( $this->conf['document_to_make'] == 'invoice_draft' || $this->conf['document_to_make'] == 'advance_draft' ) {
 					woocomm_invfox__trace( "before create invoice call" );
 
