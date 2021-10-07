@@ -1,88 +1,88 @@
 <?php
 /**
- * Plugin Name: WooCommerce InvoiceFox integration
+ * Plugin Name: Cebelca BIZ
  * Plugin URI:
- * Description: Connects WooCommerce to InvoiceFox/Cebelca.biz for invoicing and optionally inventory
- * Version: 0.0.4
- * Author: JankoITM
+ * Description: Connects WooCommerce to Cebelca.biz for invoicing and optionally inventory
+ * Version: 0.0.96
+ * Author: JankoM
  * Author URI: http://refaktorlabs.com
  * Developer: Janko M.
  * Developer URI: http://refaktorlabs.com
- * Text Domain: woocommerce-invoicefox
+ * Text Domain: woocommerce-cebelcabiz
  * Domain Path: /languages
  *
- * Copyright: © 2009-2015 WooThemes.
- * License: GNU General Public License v3.0
- * License URI: http://www.gnu.org/licenses/gpl-3.0.html
  */
 
-// Status: Alpha
-if ( ! class_exists( 'WC_InvoiceFox' ) ) {
+// Status: Beta
 
-	//ini_set('display_errors', 1);
-	//error_reporting(E_ALL ^ E_NOTICE);
+if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 
+//	ini_set('display_errors', 1);
+//	error_reporting(E_ALL ^ E_NOTICE);
+//  ini_set("log_errors", 1);
+    
 	require_once( dirname( __FILE__ ) . '/lib/invfoxapi.php' );
 	require_once( dirname( __FILE__ ) . '/lib/strpcapi.php' );
-
+    
 	$woocomm_invfox__debug = true;
 
 	function woocomm_invfox__trace( $x, $y = "" ) {
       //if ($woocomm_invfox__debug) {
-			error_log( "WC_InvoiceFox: " . ( $y ? $y . " " : "" ) . print_r( $x, true ) );
-            //}
+        // error_log( "WC_Cebelcabiz: " . ( $y ? $y . " " : "" ) . print_r( $x, true ) );
+      //}
 	}
 
 	$conf = null;
 
-	class WC_InvoiceFox {
+	class WC_Cebelcabiz {
 
 		/**
 		 * Construct the plugin.
 		 */
 		public function __construct() {
+            
+			$this->conf = get_option( 'woocommerce_cebelcabiz_settings' );
 
-			$this->conf = get_option( 'woocommerce_invoicefox_settings' );
-
+//             error_log($this->conf);
+            
 			add_action( 'plugins_loaded', array( $this, 'init' ) );
 
 			// this sets callbacks on order status changes
 			add_action( 'woocommerce_order_status_processing', array( $this, '_woocommerce_order_status_processing' ) );
 			add_action( 'woocommerce_order_status_completed', array( $this, '_woocommerce_order_status_completed' ) );
-
+            
 			// collects attachment on order complete email sent
 			add_filter( 'woocommerce_email_attachments', array( $this, '_attach_invoice_pdf_to_email' ), 10, 3 );
 
 			add_action( 'admin_notices', array( $this, 'admin_notices' ) );
 
-
-			if ( $this->conf['order_actions_enabled'] ) {
+			if ( $this->conf && $this->conf['order_actions_enabled'] ) {
 				add_action( 'woocommerce_order_actions', array( $this, 'add_order_meta_box_actions' ) );
 				// process the custom order meta box order action
-				add_action( 'woocommerce_order_action_woocommerce_invoicefox_create_invoice', array(
+				add_action( 'woocommerce_order_action_cebelcabiz_create_invoice', array(
 					$this,
 					'process_custom_order_action_invoice'
 				) );
-				add_action( 'woocommerce_order_action_woocommerce_invoicefox_create_proforma', array(
+				add_action( 'woocommerce_order_action_cebelcabiz_create_proforma', array(
 					$this,
 					'process_custom_order_action_proforma'
 				) );
-				add_action( 'woocommerce_order_action_woocommerce_invoicefox_create_advance', array(
+				add_action( 'woocommerce_order_action_cebelcabiz_create_advance', array(
 					$this,
 					'process_custom_order_action_advance'
 				) );
-				add_action( 'woocommerce_order_action_woocommerce_invoicefox_create_invt_sale', array(
+				add_action( 'woocommerce_order_action_cebelcabiz_create_invt_sale', array(
 					$this,
 					'process_custom_order_action_invt_sale'
 				) );
-				add_action( 'woocommerce_order_action_woocommerce_invoicefox_check_invt_items', array(
+				add_action( 'woocommerce_order_action_cebelcabiz_check_invt_items', array(
 					$this,
 					'process_custom_order_action_check_invt_items'
 				) );
-				add_action( 'woocommerce_order_action_woocommerce_invoicefox_mark_invoice_paid', array(
+				/* add_action( 'woocommerce_order_action_cebelcabiz_mark_invoice_paid', array(
 					$this,
 					'process_custom_order_action_mark_invoice_paid'
-				) );
+                    ) );*/
 			}
 
 			$translArr = array(
@@ -92,15 +92,26 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 			);
 		}
 
+
+        static function myplugin_activate() {
+            
+            $upload = wp_upload_dir();
+            $upload_dir = $upload['basedir'];
+            $upload_dir = $upload_dir . '/invoices';
+            if (! is_dir($upload_dir)) {
+                mkdir( $upload_dir, 0700 );
+            }
+        }
+ 
 		/**
 		 * Initialize the plugin.
 		 */
 		public function init() {
 			// Checks if WooCommerce is installed.
-			if ( class_exists( 'WC_Integration' ) ) {
+			if ( class_exists( 'WC_Cebelcabiz' ) ) {
 
 				// Include our integration class.
-				include_once 'includes/class-wc-integration-invoicefox.php';
+				include_once 'includes/class-wc-integration-cebelcabiz.php';
 
 				// Register the integration.
 				add_filter( 'woocommerce_integrations', array( $this, 'add_integration' ) );
@@ -114,11 +125,11 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 		 * Show admin notices from stack
 		 */
 		function admin_notices() {
-			if ( $notices = get_option( 'woocommerce_invoicefox_deferred_admin_notices' ) ) {
+			if ( $notices = get_option( 'cebelcabiz_deferred_admin_notices' ) ) {
 				foreach ( $notices as $notice ) {
 					echo "<div class='updated'><p>$notice</p></div>";
 				}
-				delete_option( 'woocommerce_invoicefox_deferred_admin_notices' );
+				delete_option( 'cebelcabiz_deferred_admin_notices' );
 			}
 		}
 
@@ -126,14 +137,14 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 		 * Add our items for order actions box
 		 */
 		function add_order_meta_box_actions( $actions ) {
-			$actions['woocommerce_invoicefox_create_invoice']    = __( $this->conf['app_name'] . ': Make invoice', 'woocom-invfox' );
-			$actions['woocommerce_invoicefox_mark_invoice_paid'] = __( $this->conf['app_name'] . ': Mark invoice paid', 'woocom-invfox' );
-			$actions['woocommerce_invoicefox_create_proforma']   = __( $this->conf['app_name'] . ': Make proforma', 'woocom-invfox' );
-			$actions['woocommerce_invoicefox_create_advance']    = __( $this->conf['app_name'] . ': Make advance', 'woocom-invfox' );
+			$actions['cebelcabiz_create_invoice']    = __( $this->conf['app_name'] . ': Make invoice', 'woocom-invfox' );
+			$actions['cebelcabiz_mark_invoice_paid'] = __( $this->conf['app_name'] . ': Mark invoice paid', 'woocom-invfox' );
+			$actions['cebelcabiz_create_proforma']   = __( $this->conf['app_name'] . ': Make proforma', 'woocom-invfox' );
+			$actions['cebelcabiz_create_advance']    = __( $this->conf['app_name'] . ': Make advance', 'woocom-invfox' );
 
 			//if ( $this->conf['use_inventory'] == "yes" ) {
-            $actions['woocommerce_invoicefox_check_invt_items'] = __( $this->conf['app_name'] . ': Check inventory', 'woocom-invfox' );
-            $actions['woocommerce_invoicefox_create_invt_sale'] = __( $this->conf['app_name'] . ': Make invent. sale', 'woocom-invfox' );
+            $actions['cebelcabiz_check_invt_items'] = __( $this->conf['app_name'] . ': Check inventory', 'woocom-invfox' );
+            $actions['cebelcabiz_create_invt_sale'] = __( $this->conf['app_name'] . ': Make invent. sale', 'woocom-invfox' );
                 //}
 
 			return $actions;
@@ -143,7 +154,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 		 * Add a new integration to WooCommerce.
 		 */
 		public function add_integration( $integrations ) {
-			$integrations[] = 'WC_Integration_InvoiceFox';
+			$integrations[] = 'WC_Integration_Cebelcabiz';
 
 			return $integrations;
 		}
@@ -175,12 +186,12 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 		function process_custom_order_action_mark_invoice_paid( $order ) {
 			$api = new InvfoxAPI( $this->conf['api_key'], $this->conf['api_domain'], true );
 			$api->setDebugHook( "woocomm_invfox__trace" );
-			$api->markInvoicePaid( $order->id );
+			$api->markInvoicePaid( $order->get_id() );
 
-			$notices   = get_option( 'woocommerce_invoicefox_deferred_admin_notices', array() );
+			$notices   = get_option( 'cebelcabiz_deferred_admin_notices', array() );
 			$notices[] = "Marked paid";
 
-			update_option( 'woocommerce_invoicefox_deferred_admin_notices', $notices );
+			update_option( 'cebelcabiz_deferred_admin_notices', $notices );
 		}
 
 		function process_custom_order_action_check_invt_items( $order ) {
@@ -188,7 +199,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 
 			foreach ( $order->get_items() as $item ) {
 				if ( 'line_item' == $item['type'] ) {
-					$product = $order->get_product_from_item( $item );
+					$product = $item->get_product(); // $order->get_product_from_item( $item );
 					$items[] = array(
 						'code' => $product->get_sku(),
 						'qty'  => $item['qty']
@@ -210,10 +221,10 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 				}
 			}
 
-			$notices   = get_option( 'woocommerce_invoicefox_deferred_admin_notices', array() );
+			$notices   = get_option( 'cebelcabiz_deferred_admin_notices', array() );
 			$notices[] = "Inventory items checked: " . $msg;
 
-			update_option( 'woocommerce_invoicefox_deferred_admin_notices', $notices );
+			update_option( 'cebelcabiz_deferred_admin_notices', $notices );
 		}
 
 		function _woocommerce_order_status_processing( $order ) {
@@ -224,7 +235,9 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 
 
 		function _woocommerce_order_status_completed( $order ) {
-			if ( $this->conf['on_order_completed'] == "create_invoice_draft" ) {
+            error_log(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CALLED ON COMPLETED !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+
+            if ( $this->conf['on_order_completed'] == "create_invoice_draft" ) {
 				$this->_make_document_in_invoicefox( $order, 'invoice_draft' );
 			} else if ( strpos($this->conf['on_order_completed'], "create_invoice_complete") !== false) {
               
@@ -248,6 +261,10 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 
 			$order = new WC_Order( $order_id );
 
+			if ( $order->get_total() < 0.001 ) {
+				return true;	
+			}
+			
 			if ( $document_to_make ) {
 				$this->conf['document_to_make'] = $document_to_make;
 			}
@@ -256,20 +273,20 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 			woocomm_invfox__trace(             $this->conf['document_to_make'] );
 
 			$api = new InvfoxAPI( $this->conf['api_key'], $this->conf['api_domain'], true );
-			$api->setDebugHook( "woocomm_invfox__trace" );
+//			$api->setDebugHook( "woocomm_invfox__trace" );
 
-			$vatNum = get_post_meta( $order->id, 'VAT Number', true );
+			$vatNum = get_post_meta( $order->get_id(), 'VAT Number', true );
 
 			$r = $api->assurePartner( array(
-				'name'           => $order->billing_first_name . " " . $order->billing_last_name . ( $order->billing_company ? ", " : "" ) . $order->billing_company,
-				'street'         => $order->billing_address_1 . "\n" . $order->billing_address_2,
-				'postal'         => $order->billing_postcode,
-				'city'           => $order->billing_city,
-				'country'        => $order->billing_country,
+				'name'           => $order->get_billing_first_name() . " " . $order->get_billing_last_name() . ( $order->get_billing_company() ? ", " : "" ) . $order->get_billing_company(),
+				'street'         => $order->get_billing_address_1() . "\n" . $order->get_billing_address_2(),
+				'postal'         => $order->get_billing_postcode(),
+				'city'           => $order->get_billing_city(),
+				'country'        => $order->get_billing_country(),
 				'vatid'          => $vatNum, // TODO -- find where the data is
-				'phone'          => $order->billing_phone, //$c->phone.($c->phone_mobile?", ":"").$c->phone_mobile,
+				'phone'          => $order->get_billing_phone(), //$c->phone.($c->phone_mobile?", ":"").$c->phone_mobile,
 				'website'        => "",
-				'email'          => $order->billing_email,
+				'email'          => $order->get_billing_email(),
 				'notes'          => '',
 				'vatbound'       => ! ! $vatNum, //!!$c->vat_number, TODO -- after (2)
 				'custaddr'       => '',
@@ -284,18 +301,18 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 				$clientIdA = $r->getData();
 				$clientId  = $clientIdA[0]['id'];
 				$date1     = $api->_toSIDate( date( 'Y-m-d' ) ); //// TODO LONGTERM ... figure out what we do with different Dates on api side (maybe date optionally accepts dbdate format)
-				$invid     = $this->conf['use_shop_id_for_docnum'] ? str_pad( $order->id, 5, "0", STR_PAD_LEFT ) : "";
+				$invid     = $this->conf['use_shop_id_for_docnum'] ? str_pad( $order->get_id(), 5, "0", STR_PAD_LEFT ) : "";
 				$body2     = array();
 
 				foreach ( $order->get_items() as $item ) {
 					if ( 'line_item' == $item['type'] ) {
-						$product        = $order->get_product_from_item( $item );
+						$product        = $item->get_product(); // $order->get_product_from_item( $item );
 						$attributes_str = woocomm_invfox_get_item_attributes( $item );
 						$body2[]        = array(
 							'code'     => $product->get_sku(),
 							'title'    => 
                             ($this->conf['add_sku_to_line'] == "yes" && $this->conf['document_to_make'] != 'inventory' ? $product->get_sku(). ": " : "" ).
-                            $product->post->post_title . ( $attributes_str ? "\n" . $attributes_str : "" ) . ( $this->conf['add_post_content_in_item_descr'] == "yes" ? "\n" . $product->post->post_content : "" ),
+                            $product->get_title() . ( $attributes_str ? "\n" . $attributes_str : "" ), // ( $this->conf['add_post_content_in_item_descr'] == "yes" ? "\n" . $product->get_content : "" ),
 							'qty'      => $item['qty'],
 							'mu'       => '',
 							'price'    => round( $item['line_total'] / $item['qty'], $this->conf['round_calculated_netprice_to'] ),
@@ -305,7 +322,8 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 					}
 				}
 
-				if ( $this->conf['document_to_make'] != 'inventory' && $order->order_shipping > 0 ) {
+				// SHIPPING
+				if ( $this->conf['document_to_make'] != 'inventory' && $order->get_shipping_total() > 0 ) {
 					woocomm_invfox__trace( "adding shipping" );
 
 					if ( $this->conf['partial_sum_label'] ) {
@@ -323,12 +341,26 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 						'title'    => $order->get_shipping_method(),
 						'qty'      => 1,
 						'mu'       => '',
-						'price'    => $order->order_shipping,
-						'vat'      => calculatePreciseSloVAT($order->order_shipping, $order->order_shipping_tax),
+						'price'    => $order->get_shipping_total(),
+						'vat'      => calculatePreciseSloVAT($order->get_shipping_total(), $order->get_shipping_tax()),
 						'discount' => 0
 					);
 				}
-
+				
+				// FEES
+				foreach( $order->get_items('fee') as $item_id => $item_fee ){
+					$fee_total = $item_fee->get_total();
+					$fee_total_tax = $item_fee->get_total_tax();
+					$body2[] = array(
+						'title'    => $item_fee->get_name(),
+						'qty'      => 1,
+						'mu'       => '',
+						'price'    => $fee_total,
+						'vat'      => calculatePreciseSloVAT($fee_total, $fee_total_tax),
+						'discount' => 0
+					);
+				}
+				
 				if ( $this->conf['document_to_make'] == 'invoice_draft' || $this->conf['document_to_make'] == 'advance_draft' ) {
 					woocomm_invfox__trace( "before create invoice call" );
 
@@ -340,7 +372,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 						'id_partner'      => $clientId,
 						'taxnum'          => '-',
 						'doctype'         => $this->conf['document_to_make'] == 'advance_draft' ? 1 : 0,
-						'id_document_ext' => $order->id,
+						'id_document_ext' => $order->get_id(),
 						'pub_notes'       => $this->conf['order_num_label'] . ' #' . $order->get_order_number()
 					), $body2 );
 
@@ -358,7 +390,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 						'id_partner'      => $clientId,
 						'taxnum'          => '-',
 						'doctype'         => 0,
-						'id_document_ext' => $order->id,
+						'id_document_ext' => $order->get_id(),
 						'pub_notes'       => $this->conf['order_num_label'] . ' #' . $order->get_order_number()
 					), $body2 );
 
@@ -399,9 +431,9 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
                         if ($markPaid) {
                           woocomm_invfox__trace( "--- BEFORE PAID 2  ----" );
                           $api->markInvoicePaid2( $invA[0]['id'] );
-                          $notices   = get_option( 'woocommerce_invoicefox_deferred_admin_notices', array() );
+                          $notices   = get_option( 'cebelcabiz_deferred_admin_notices', array() );
                           $notices[] = "Marked paid";
-                          update_option( 'woocommerce_invoicefox_deferred_admin_notices', $notices );
+                          update_option( 'cebelcabiz_deferred_admin_notices', $notices );
                         }
                         
 						woocomm_invfox__trace( "--- BEFORE INVT  ----" );
@@ -409,16 +441,16 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
                         if ($decreaseInventory) {
                           woocomm_invfox__trace( "--- BEFORE INVT 2  ----" );
                           $api->makeInventoryDocOutOfInvoice(  $invA[0]['id'], $this->conf['from_warehouse_id'], $clientId );
-                          $notices   = get_option( 'woocommerce_invoicefox_deferred_admin_notices', array() );
+                          $notices   = get_option( 'cebelcabiz_deferred_admin_notices', array() );
                           $notices[] = "Inventory doc created";
-                          update_option( 'woocommerce_invoicefox_deferred_admin_notices', $notices );
+                          update_option( 'cebelcabiz_deferred_admin_notices', $notices );
                         }
 
 						$uploads = wp_upload_dir();
 						$upload_path    = $uploads['basedir'] . "/invoices";
                         
 						//$filename = $api->downloadInvoicePDF( $order->id, $path );
-						$filename = $api->downloadPDF( 0, $order->id, $upload_path, 'invoice-sent', '' );
+						$filename = $api->downloadPDF( 0, $order->get_id(), $upload_path, 'invoice-sent', '' );
 
 						/*
 						$filetype = wp_check_filetype( basename( $filename ), null );
@@ -445,7 +477,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 						set_post_thumbnail( $order->id, $attach_id );
 						*/
 
-						add_post_meta( $order->id, 'invoicefox_attached_pdf', $filename );
+						add_post_meta( $order->get_id(), 'invoicefox_attached_pdf', $filename );
 						$order->save();
 						$order->add_order_note( "Invoice No. {$r3[0]['new_title']} was created at {$this->conf['app_name']}." );
 
@@ -460,7 +492,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 						'days_valid' => $this->conf['proforma_days_valid'],
 						'id_partner' => $clientId,
 						'taxnum'     => '-',
-						'pub_notes'  => $this->conf['order_num_label'] . ' #' . $order->id
+						'pub_notes'  => $this->conf['order_num_label'] . ' #' . $order->get_id()
 					), $body2 );
 
 					if ( $r2->isOk() ) {
@@ -478,7 +510,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 						'id_contact_from' => $this->conf['from_warehouse_id'],
 						'taxnum'          => '-',
 						'doctype'         => 1,
-						'pub_notes'       => $this->conf['order_num_label'] . ' #' . $order->id
+						'pub_notes'       => $this->conf['order_num_label'] . ' #' . $order->get_id()
 					), $body2 );
 
 					if ( $r2->isOk() ) {
@@ -488,7 +520,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 
 				}
 
-				woocomm_invfox__trace( $r2 );
+				// woocomm_invfox__trace( $r2 );
 				woocomm_invfox__trace( "after create invoice" );
 			}
 
@@ -507,7 +539,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 			$uploads     = wp_upload_dir();
 			$upload_path = $uploads['basedir'] . '/invoices';
 
-			$file = $api->downloadPDF( 0, $order->id, $upload_path, 'invoice-sent', '' );
+			$file = $api->downloadPDF( 0, $order->get_id(), $upload_path, 'invoice-sent', '' );
 
 			woocomm_invfox__trace( "================ END PDF DOWNLOAD ===============" );
 
@@ -527,8 +559,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 
 				if ( isset( $status ) && in_array( $status, $allowed_statuses ) ) {
                     woocomm_invfox__trace( "================ ATTACH PDF TO EMAIL ===============" );
-					$iFox = new WC_InvoiceFox();
-					$path = $iFox->_woocommerce_order_invoice_pdf( $order );
+					$path = $this->_woocommerce_order_invoice_pdf( $order );
 					$attachments[] = $path;
                     woocomm_invfox__trace( $attachments );
 				}
@@ -540,7 +571,7 @@ if ( ! class_exists( 'WC_InvoiceFox' ) ) {
 		}
 	}
 
-	$WC_InvoiceFox = new WC_InvoiceFox( __FILE__ );
+	$WC_Cebelcabiz = new WC_Cebelcabiz( __FILE__ );
 }
 
 
@@ -575,6 +606,8 @@ function woocomm_invfox_get_attributes( $product ) {
 	return $formatted_attributes;
 }
 
+register_activation_hook( __FILE__, array( 'WC_Cebelcabiz', 'myplugin_activate' ) );
+
 function woocomm_invfox_prettify_slug( $t ) {
 	return str_replace( "-", " ", ucfirst( $t ) );
 }
@@ -596,12 +629,12 @@ function woocomm_invfox_get_item_attributes( $item ) {
 }
 
 function calculatePreciseSloVAT($netPrice, $vatValue) {
-
-	$vatLevels = array(0, 5, 9.5, 22);
+	// because of new EU rules all EU VAT levels are valid here
+	$vatLevels = array(0, 5, 9.5, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27);
 	$vat1 = round( $vatValue / $netPrice * 100, 1);
 	$vat = -1;
 	foreach ($vatLevels as $vatLevel) {
-		if (abs($vat1 - $vatLevel) < 2.5) {
+		if (abs($vat1 - $vatLevel) < 0.5) {
 			$vat = $vatLevel;
 		}
 	}
