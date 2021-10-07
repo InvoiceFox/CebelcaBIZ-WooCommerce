@@ -4,7 +4,7 @@ To je dodatek za WooCommerce (Wordpress), ki lahko na podlagi statusov naročil 
 
 ## Status
 
-Dodatek se aktivno uproablja na večih spletnih trgovinah in deluje.
+Dodatek se že dlje časa uporablja na večih spletnih trgovinah.
 
 ## Namestitev na kratko
 
@@ -15,12 +15,14 @@ Na strani https://github.com/InvoiceFox/CebelcaBIZ-WooCommerce si zgoraj desno k
 ### 2. Naložite dodatek v vaš Wordpress
 
 * V wordpress administraciji pojdite na "Plugins > Add New > Upload Plugin" ter izberite prenešeno ZIP datoteko.
-ali
+
+**ali**
+
 * Preko FTP ali file managerja naložite mapo **CebelcaBIZ-WooCommerce** v mapo **wordpress/wp-content/plugins/** na vašem strežniku.
 
 ### 3. Aktivirajte dodatek
 
-* Na strani *Plugins > Installed plugins* poiščite **Cebelca BIZ** in kliknite **Activate**.
+Na strani *Plugins > Installed plugins* poiščite **Cebelca BIZ** in kliknite **Activate**.
 
 ### 4. Nastavite dodatek
 
