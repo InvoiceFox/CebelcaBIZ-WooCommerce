@@ -276,6 +276,8 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 //			$api->setDebugHook( "woocomm_invfox__trace" );
 
 			$vatNum = get_post_meta( $order->get_id(), 'VAT Number', true );
+			if (!$vatNum) { $vatNum = get_post_meta( $order->get_id(), 'vat_number', true ); }
+			if (!$vatNum) { $vatNum = get_post_meta( $order->get_id(), '_vat_number', true ); }
 
 			$r = $api->assurePartner( array(
 				'name'           => $order->get_billing_first_name() . " " . $order->get_billing_last_name() . ( $order->get_billing_company() ? ", " : "" ) . $order->get_billing_company(),
