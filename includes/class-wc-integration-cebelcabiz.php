@@ -6,7 +6,7 @@
  * @category Integration
  * @author   Janko M.
  */
-if ( ! class_exists( 'WC_Integration_Cebelcabiz' ) ) :
+if ( ! class_exists( 'WC_Integration_Cebelcabiz' ) && class_exists( 'WC_Integration' ) ) :
 
   class WC_Integration_Cebelcabiz extends WC_Integration {
 		
