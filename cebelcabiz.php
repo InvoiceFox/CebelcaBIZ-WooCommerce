@@ -3,7 +3,7 @@
  * Plugin Name: Cebelca BIZ
  * Plugin URI:
  * Description: Connects WooCommerce to Cebelca.biz for invoicing and optionally inventory
- * Version: 0.0.96
+ * Version: 0.0.99
  * Author: JankoM
  * Author URI: http://refaktorlabs.com
  * Developer: Janko M.
@@ -28,7 +28,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 
 	function woocomm_invfox__trace( $x, $y = "" ) {
       //if ($woocomm_invfox__debug) {
-        // error_log( "WC_Cebelcabiz: " . ( $y ? $y . " " : "" ) . print_r( $x, true ) );
+         error_log( "WC_Cebelcabiz: " . ( $y ? $y . " " : "" ) . print_r( $x, true ) );
       //}
 	}
 
@@ -44,10 +44,25 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 			$this->conf = get_option( 'woocommerce_cebelcabiz_settings' );
 
 //             error_log($this->conf);
+			if ( $this->conf ) {
+                if ( !array_key_exists('api_domain', $this->conf) ) {
+                    $this->conf['api_domain'] = "www.cebelca.biz";
+                }
+                if ( !array_key_exists('app_name', $this->conf) ) {
+                    $this->conf['app_name'] = "Cebelca BIZ";
+                }
+                if ( !array_key_exists('use_shop_id_for_docnum', $this->conf) ) {
+                    $this->conf['use_shop_id_for_docnum'] = true;
+                }
+                if ( !array_key_exists('fiscal_test_mode', $this->conf) ) {
+                    $this->conf['fiscal_test_mode'] = true;
+                }
+            }
             
 			add_action( 'plugins_loaded', array( $this, 'init' ) );
 
 			// this sets callbacks on order status changes
+			add_action( 'woocommerce_order_status_on-hold', array( $this, '_woocommerce_order_status_on_hold' ) );
 			add_action( 'woocommerce_order_status_processing', array( $this, '_woocommerce_order_status_processing' ) );
 			add_action( 'woocommerce_order_status_completed', array( $this, '_woocommerce_order_status_completed' ) );
             
@@ -227,6 +242,15 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 			update_option( 'cebelcabiz_deferred_admin_notices', $notices );
 		}
 
+		function _woocommerce_order_status_on_hold( $order ) {
+			if ( $this->conf['on_order_on_hold'] == "create_proforma" ) {
+                $this->_make_document_in_invoicefox( $order, "proforma" );
+			}
+			if ( $this->conf['on_order_on_hold'] == "create_invoice_draft" ) {
+				$this->_make_document_in_invoicefox( $order, 'invoice_draft' );
+			}
+		}
+        
 		function _woocommerce_order_status_processing( $order ) {
 			if ( $this->conf['on_order_processing'] == "create_invoice_draft" ) {
 				$this->_make_document_in_invoicefox( $order, 'invoice_draft' );
@@ -259,6 +283,8 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 		 */
 		function _make_document_in_invoicefox( $order_id, $document_to_make = "", $markPaid = 0, $decreaseInventory = 0 ) {
 
+            $vatLevels = parseVatLevels($this->conf['vat_levels_list']);
+            
 			$order = new WC_Order( $order_id );
 
 			if ( $order->get_total() < 0.001 ) {
@@ -271,6 +297,8 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 
 			woocomm_invfox__trace( "================ BEGIN MAKING DOC ===============" );
 			woocomm_invfox__trace(             $this->conf['document_to_make'] );
+			woocomm_invfox__trace(             $order->get_payment_method() );
+			woocomm_invfox__trace(             $order->get_payment_method_title() );
 
 			$api = new InvfoxAPI( $this->conf['api_key'], $this->conf['api_domain'], true );
 //			$api->setDebugHook( "woocomm_invfox__trace" );
@@ -318,7 +346,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 							'qty'      => $item['qty'],
 							'mu'       => '',
 							'price'    => round( $item['line_total'] / $item['qty'], $this->conf['round_calculated_netprice_to'] ),
-							'vat'      => calculatePreciseSloVAT($item['line_total'], $item['line_tax']),
+							'vat'      => calculatePreciseSloVAT($item['line_total'], $item['line_tax'], $vatLevels),
 							'discount' => 0
 						);
 					}
@@ -344,7 +372,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 						'qty'      => 1,
 						'mu'       => '',
 						'price'    => $order->get_shipping_total(),
-						'vat'      => calculatePreciseSloVAT($order->get_shipping_total(), $order->get_shipping_tax()),
+						'vat'      => calculatePreciseSloVAT($order->get_shipping_total(), $order->get_shipping_tax(), $vatLevels),
 						'discount' => 0
 					);
 				}
@@ -358,7 +386,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 						'qty'      => 1,
 						'mu'       => '',
 						'price'    => $fee_total,
-						'vat'      => calculatePreciseSloVAT($fee_total, $fee_total_tax),
+						'vat'      => calculatePreciseSloVAT($fee_total, $fee_total_tax, $vatLevels),
 						'discount' => 0
 					);
 				}
@@ -398,36 +426,37 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 
 					if ( $r2->isOk() ) {
 						woocomm_invfox__trace( "--- BEFORE FINALIZE ----" );
-
                         woocomm_invfox__trace( $this->conf['fiscal_mode'] );
 						$invA = $r2->getData();
-						if ( $this->conf['fiscal_mode'] == "no" ) {
-                          woocomm_invfox__trace( "--- non fiscal ----" );
-                          $r3 = $api->finalizeInvoiceNonFiscal( array(
-                                                                      'id'      => $invA[0]['id'],
-                                                                      'title'   => "",
-                                                                      'doctype' => 0
-                                                                      ) );
+						if ( $this->conf['fiscal_mode'] == "no" ||
+                             ! isPaymentAmongst($order->get_payment_method_title(), $order->$this->conf['fiscalize_payment_methods'])) {
+                            
+                            woocomm_invfox__trace( "--- non fiscal ----" );
+                            $r3 = $api->finalizeInvoiceNonFiscal( array(
+                                'id'      => $invA[0]['id'],
+                                'title'   => "",
+                                'doctype' => 0
+                            ) );
 						} else {
-                          woocomm_invfox__trace( "--- fiscal ----" );
-                          if ( $this->conf['fiscal_id_location'] && 
-                               $this->conf['fiscal_op_tax_id'] && 
-                               $this->conf['fiscal_op_name']
-                               ) {
-							$r3 = $api->finalizeInvoice( array(
-                                                               'id'          => $invA[0]['id'],
-                                                               'id_location' => $this->conf['fiscal_id_location'],
-                                                               'fiscalize'   => 1,
-                                                               'op-tax-id'   => $this->conf['fiscal_op_tax_id'],
-                                                               'op-name'     => $this->conf['fiscal_op_name'],
-                                                               'test_mode'   => $this->conf['fiscal_test_mode'] == "yes" ? 1 : 0
-                                                               ) );
-                          } else {
-                            woocomm_invfox__trace( "ERROR: MISSING ID_LOCATION, OP TAX ID, OP NAME" );
+                            woocomm_invfox__trace( "--- fiscal ----" );
+                            if ( $this->conf['fiscal_id_location'] && 
+                                 $this->conf['fiscal_op_tax_id'] && 
+                                 $this->conf['fiscal_op_name']
+                            ) {
+                                $r3 = $api->finalizeInvoice( array(
+                                    'id'          => $invA[0]['id'],
+                                    'id_location' => $this->conf['fiscal_id_location'],
+                                    'fiscalize'   => 1,
+                                    'op-tax-id'   => $this->conf['fiscal_op_tax_id'],
+                                    'op-name'     => $this->conf['fiscal_op_name'],
+                                    'test_mode'   => $this->conf['fiscal_test_mode'] == "yes" ? 1 : 0
+                                ) );
+                            } else {
+                                woocomm_invfox__trace( "ERROR: MISSING ID_LOCATION, OP TAX ID, OP NAME" );
 
-                          }
+                            }
 						}
-
+                        
 						woocomm_invfox__trace( "--- BEFORE PAID  ----" );
 
                         if ($markPaid) {
@@ -630,9 +659,34 @@ function woocomm_invfox_get_item_attributes( $item ) {
 	return $res;
 }
 
-function calculatePreciseSloVAT($netPrice, $vatValue) {
+function parseVatLevels($string) {
+    // Split the string into an array of strings using str_getcsv()
+    $array = str_getcsv($string);
+    
+    // Convert each string to a double using the floatval() function
+    $doubles = array_map('floatval', $array);
+
+    // Return the resulting array of doubles
+    return $doubles;
+}
+
+function isPaymentAmongst($po, $options) {
+    // check if there is a * , if it is, answer true for any payment method
+    if (strpos($options, "*") !== false) {
+        return true;    
+    }
+    
+    // convert both strings to lowercase for case-insensitive search
+    $po = strtolower($po);
+    $options = strtolower($options);
+
+    // return true if $po is found within $options, otherwise return false
+    return strpos($options, $po) !== false;
+}
+
+function calculatePreciseSloVAT($netPrice, $vatValue, $vatLevels) {
 	// because of new EU rules all EU VAT levels are valid here
-	$vatLevels = array(0, 5, 9.5, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27);
+	// $vatLevels = array();
 	$vat1 = round( $vatValue / $netPrice * 100, 1);
 	$vat = -1;
 	foreach ($vatLevels as $vatLevel) {
