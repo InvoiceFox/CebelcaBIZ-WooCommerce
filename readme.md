@@ -10,7 +10,7 @@ Dodatek se že dlje časa uporablja v mnogih spletnih trgovinah.
 
 ## Navodila za namestitev
 
-Navodila za namestitev in uporabo dodatka najdete na [strani Čebelca BIZ](https://www.cebelca.biz/navodila/itnegracije/woocommerce/)
+Navodila za namestitev in uporabo dodatka najdete na [strani Čebelca BIZ](https://www.cebelca.biz/navodila/integracije/woocommerce/)
 
 ## Dovoljenja
 
