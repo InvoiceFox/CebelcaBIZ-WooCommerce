@@ -28,7 +28,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 
 	function woocomm_invfox__trace( $x, $y = "" ) {
       //if ($woocomm_invfox__debug) {
-         error_log( "WC_Cebelcabiz: " . ( $y ? $y . " " : "" ) . print_r( $x, true ) );
+        //     error_log( "WC_Cebelcabiz: " . ( $y ? $y . " " : "" ) . print_r( $x, true ) );
       //}
 	}
 
@@ -424,20 +424,16 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 						'pub_notes'       => $this->conf['order_num_label'] . ' #' . $order->get_order_number()
 					), $body2 );
 
+                    $r3 = Array(Array( "new_title" => "OSNUTEK" ));
+                    
 					if ( $r2->isOk() ) {
 						woocomm_invfox__trace( "--- BEFORE FINALIZE ----" );
                         woocomm_invfox__trace( $this->conf['fiscal_mode'] );
 						$invA = $r2->getData();
-						if ( $this->conf['fiscal_mode'] == "no" ||
-                             ! isPaymentAmongst($order->get_payment_method_title(), $order->$this->conf['fiscalize_payment_methods'])) {
-                            
-                            woocomm_invfox__trace( "--- non fiscal ----" );
-                            $r3 = $api->finalizeInvoiceNonFiscal( array(
-                                'id'      => $invA[0]['id'],
-                                'title'   => "",
-                                'doctype' => 0
-                            ) );
-						} else {
+                        woocomm_invfox__trace( $order->get_payment_method_title() );
+                        woocomm_invfox__trace( $this->conf['fiscalize_payment_methods'] );
+						if ( $this->conf['fiscal_mode'] == "yes" &&
+                             isPaymentAmongst($order->get_payment_method_title(), $this->conf['fiscalize_payment_methods'])) {                            
                             woocomm_invfox__trace( "--- fiscal ----" );
                             if ( $this->conf['fiscal_id_location'] && 
                                  $this->conf['fiscal_op_tax_id'] && 
@@ -455,6 +451,13 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
                                 woocomm_invfox__trace( "ERROR: MISSING ID_LOCATION, OP TAX ID, OP NAME" );
 
                             }
+						} else {
+                            woocomm_invfox__trace( "--- non fiscal ----" );
+                            $r3 = $api->finalizeInvoiceNonFiscal( array(
+                                'id'      => $invA[0]['id'],
+                                'title'   => "",
+                                'doctype' => 0
+                            ) );
 						}
                         
 						woocomm_invfox__trace( "--- BEFORE PAID  ----" );
@@ -670,7 +673,7 @@ function parseVatLevels($string) {
     return $doubles;
 }
 
-function isPaymentAmongst($po, $options) {
+function isPaymentAmongst($po, $options){ 
     // check if there is a * , if it is, answer true for any payment method
     if (strpos($options, "*") !== false) {
         return true;    
