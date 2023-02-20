@@ -92,10 +92,27 @@ class InvfoxAPI {
     $context = stream_context_create($opts);
     $data = file_get_contents("https://{$this->api->domain}/API-pdf?id=$id&extid=$extid&res={$res}&format=PDF&doctitle=Račun%20št.&lang=si&hstyle={$hstyle}", false, $context);
 
+    woocomm_invfox__trace("----------- === XOXOXOXOXOXO === ------------");
+    woocomm_invfox__trace("https://{$this->api->domain}/API-pdf?id=$id&extid=$extid&res={$res}&format=PDF&doctitle=Račun%20št.&lang=si&hstyle={$hstyle}");
+    woocomm_invfox__trace($res);
+
+    $prefix = "racun";
+    switch($res) {
+    case "invoice-sent":
+        $prefix = "racun";
+        break;
+    case "preinvoice":
+        $prefix = "predracun";
+        break;
+    case "transfer":
+        $prefix = "dobavnica";
+        break;
+    }
+    
     if ($data === false) {
       echo 'error downloading PDF';
     } else {
-      $file = $path."/racun_{$id}_{$extid}.pdf";
+      $file = $path."/{$prefix}_{$id}_{$extid}.pdf";
       file_put_contents($file, $data);
       return $file;
     }

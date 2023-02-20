@@ -3,7 +3,7 @@
  * Plugin Name: Cebelca BIZ
  * Plugin URI:
  * Description: Connects WooCommerce to Cebelca.biz for invoicing and optionally inventory
- * Version: 0.0.99
+ * Version: 0.0.100
  * Author: JankoM
  * Author URI: http://refaktorlabs.com
  * Developer: Janko M.
@@ -17,19 +17,21 @@
 
 if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 
-//	ini_set('display_errors', 1);
-//	error_reporting(E_ALL ^ E_NOTICE);
-//  ini_set("log_errors", 1);
+    //	ini_set('display_errors', 1);
+	//error_reporting(E_ALL);
+    //ini_set("log_errors", 1);
     
 	require_once( dirname( __FILE__ ) . '/lib/invfoxapi.php' );
 	require_once( dirname( __FILE__ ) . '/lib/strpcapi.php' );
-    
-	$woocomm_invfox__debug = true;
+
+    // SET TO TRUE OF FALSE TO DEBUG
+    define("WOOCOMM_INVFOX_DEBUG", false);
 
 	function woocomm_invfox__trace( $x, $y = "" ) {
-      //if ($woocomm_invfox__debug) {
-        //     error_log( "WC_Cebelcabiz: " . ( $y ? $y . " " : "" ) . print_r( $x, true ) );
-      //}
+        //global $woocomm_invfox__debug;
+      if (WOOCOMM_INVFOX_DEBUG) {
+             error_log( "WC_Cebelcabiz: " . ( $y ? $y . " " : "" ) . print_r( $x, true ) );
+      }
 	}
 
 	$conf = null;
@@ -43,7 +45,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
             
 			$this->conf = get_option( 'woocommerce_cebelcabiz_settings' );
 
-//             error_log($this->conf);
+            // error_log($this->conf);
 			if ( $this->conf ) {
                 if ( !array_key_exists('api_domain', $this->conf) ) {
                     $this->conf['api_domain'] = "www.cebelca.biz";
@@ -52,10 +54,10 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
                     $this->conf['app_name'] = "Cebelca BIZ";
                 }
                 if ( !array_key_exists('use_shop_id_for_docnum', $this->conf) ) {
-                    $this->conf['use_shop_id_for_docnum'] = true;
+                    $this->conf['use_shop_id_for_docnum'] = false;
                 }
                 if ( !array_key_exists('fiscal_test_mode', $this->conf) ) {
-                    $this->conf['fiscal_test_mode'] = true;
+                    $this->conf['fiscal_test_mode'] = false;
                 }
             }
             
@@ -195,7 +197,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 		}
 
 		function process_invoice_download( $order ) {
-			$this->_woocommerce_order_invoice_pdf( $order );
+			$this->_woocommerce_order_invoice_pdf( $order, "invoice-sent" );
 		}
 
 		function process_custom_order_action_mark_invoice_paid( $order ) {
@@ -241,9 +243,10 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 
 			update_option( 'cebelcabiz_deferred_admin_notices', $notices );
 		}
-
+        
 		function _woocommerce_order_status_on_hold( $order ) {
-			if ( $this->conf['on_order_on_hold'] == "create_proforma" ) {
+            // if ( $this->conf['on_order_on_hold'] == "create_proforma" ) 
+            if ( strpos($this->conf['on_order_on_hold'], "create_proforma") !== false) {
                 $this->_make_document_in_invoicefox( $order, "proforma" );
 			}
 			if ( $this->conf['on_order_on_hold'] == "create_invoice_draft" ) {
@@ -259,7 +262,6 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 
 
 		function _woocommerce_order_status_completed( $order ) {
-            error_log(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CALLED ON COMPLETED !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 
             if ( $this->conf['on_order_completed'] == "create_invoice_draft" ) {
 				$this->_make_document_in_invoicefox( $order, 'invoice_draft' );
@@ -338,11 +340,14 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 					if ( 'line_item' == $item['type'] ) {
 						$product        = $item->get_product(); // $order->get_product_from_item( $item );
 						$attributes_str = woocomm_invfox_get_item_attributes( $item );
+                        $variation_str  = woocomm_invfox_get_order_item_variations( $item );
 						$body2[]        = array(
 							'code'     => $product->get_sku(),
 							'title'    => 
                             ($this->conf['add_sku_to_line'] == "yes" && $this->conf['document_to_make'] != 'inventory' ? $product->get_sku(). ": " : "" ).
-                            $product->get_title() . ( $attributes_str ? "\n" . $attributes_str : "" ), // ( $this->conf['add_post_content_in_item_descr'] == "yes" ? "\n" . $product->get_content : "" ),
+                            $product->get_title() .
+                            ( $attributes_str ? "\n" . $attributes_str : "" ) . // ( $this->conf['add_post_content_in_item_descr'] == "yes" ? "\n" . $product->get_content : "" ),
+                            ( $variation_str ? "\n" . $variation_str : "" ), // ( $this->conf['add_post_content_in_item_descr'] == "yes" ? "\n" . $product->get_content : "" ),q
 							'qty'      => $item['qty'],
 							'mu'       => '',
 							'price'    => round( $item['line_total'] / $item['qty'], $this->conf['round_calculated_netprice_to'] ),
@@ -351,7 +356,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 						);
 					}
 				}
-
+                
 				// SHIPPING
 				if ( $this->conf['document_to_make'] != 'inventory' && $order->get_shipping_total() > 0 ) {
 					woocomm_invfox__trace( "adding shipping" );
@@ -408,7 +413,8 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 
 					if ( $r2->isOk() ) {
 						$invA = $r2->getData();
-						$order->add_order_note( "Invoice No. {$invA[0]['title']} was created at {$this->conf['app_name']}." );
+                        $docnum = $invA[0]['title'] ? $invA[0]['title'] : "OSNUTEK";
+						$order->add_order_note( "Račun {$docnum} je bil ustvarjen na {$this->conf['app_name']}." );
 					}
 
 				} elseif ( $this->conf['document_to_make'] == 'invoice_complete' ) {
@@ -513,8 +519,8 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 
 						add_post_meta( $order->get_id(), 'invoicefox_attached_pdf', $filename );
 						$order->save();
-						$order->add_order_note( "Invoice No. {$r3[0]['new_title']} was created at {$this->conf['app_name']}." );
-
+                        $docnum = $r3[0]['new_title'] ? $r3[0]['new_title'] : "OSNUTEK";
+						$order->add_order_note( "Račun {$docnum} je bil ustvarjen na {$this->conf['app_name']}." );
 					}
 
 				} elseif ( $this->conf['document_to_make'] == 'proforma' ) {
@@ -531,7 +537,9 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 
 					if ( $r2->isOk() ) {
 						$invA = $r2->getData();
-						$order->add_order_note( "ProForma Invoice No. {$invA[0]['title']} was created at {$this->conf['app_name']}." );
+                        $docnum = $invA[0]['title'] ? $invA[0]['title'] : "OSNUTEK";
+						$order->add_order_note( "Predračun {$docnum} je bil ustvarjen na {$this->conf['app_name']}." );
+                        //						$order->add_order_note( "ProForma Invoice No. {$invA[0]['title']} was created at {$this->conf['app_name']}." );
 					}
 
 				} elseif ( $this->conf['document_to_make'] == 'inventory' ) {
@@ -549,7 +557,8 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 
 					if ( $r2->isOk() ) {
 						$invA = $r2->getData();
-						$order->add_order_note( "Inventory sales document No. {$invA[0]['title']} was created at {$this->conf['app_name']}." );
+                        $docnum = $invA[0]['title'] ? $invA[0]['title'] : "OSNUTEK";
+						$order->add_order_note( "Skladiščni dok. {$docnum} je bil ustvarjen na {$this->conf['app_name']}." );
 					}
 
 				}
@@ -564,7 +573,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 		/**
 		 * function that downloads pdf
 		 */
-		function _woocommerce_order_invoice_pdf( $order ) {
+		function _woocommerce_order_invoice_pdf( $order, $resource ) {
 			woocomm_invfox__trace( "================ BEGIN PDF DOWNLOAD ===============" );
 
 			$api = new InvfoxAPI( $this->conf['api_key'], $this->conf['api_domain'], true );
@@ -573,7 +582,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 			$uploads     = wp_upload_dir();
 			$upload_path = $uploads['basedir'] . '/invoices';
 
-			$file = $api->downloadPDF( 0, $order->get_id(), $upload_path, 'invoice-sent', '' );
+			$file = $api->downloadPDF( 0, $order->get_id(), $upload_path, $resource, '' );
 
 			woocomm_invfox__trace( "================ END PDF DOWNLOAD ===============" );
 
@@ -582,23 +591,33 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 
 		function _attach_invoice_pdf_to_email( $attachments, $status, $order ) {
 
-			if ( $this->conf['on_order_completed'] == "create_invoice_complete_email" ||
-			     $this->conf['on_order_completed'] == "create_invoice_complete_paid_email" ||
-			     $this->conf['on_order_completed'] == "create_invoice_complete_paid_inventory_email" ||
-			     $this->conf['on_order_completed'] == "email" ) {
+            if ( isset( $status ) && in_array( $status, array( 'customer_on_hold_order' ) ) ) {
 
-                woocomm_invfox__trace( "================ ATTACH FILTER CALLED  ===============" );
+                if ( $this->conf['on_order_on_hold'] == "create_proforma_email")  {
 
-				$allowed_statuses = array( 'customer_completed_order' );
-
-				if ( isset( $status ) && in_array( $status, $allowed_statuses ) ) {
+                    woocomm_invfox__trace( "================ ATTACH PROFORMA FILTER CALLED  ===============" );
                     woocomm_invfox__trace( "================ ATTACH PDF TO EMAIL ===============" );
-					$path = $this->_woocommerce_order_invoice_pdf( $order );
+					$path = $this->_woocommerce_order_invoice_pdf( $order, "preinvoice" );
 					$attachments[] = $path;
                     woocomm_invfox__trace( $attachments );
 				}
-
 				return $attachments;
+                
+            } else if ( isset( $status ) && in_array( $status, array( 'customer_completed_order' ) ) ) {
+
+                if ($this->conf['on_order_completed'] == "create_invoice_complete_email" ||
+                    $this->conf['on_order_completed'] == "create_invoice_complete_paid_email" ||
+                    $this->conf['on_order_completed'] == "create_invoice_complete_paid_inventory_email" ||
+                    $this->conf['on_order_completed'] == "email" ) {
+                    
+                    woocomm_invfox__trace( "================ ATTACH FILTER CALLED  ===============" );
+                    woocomm_invfox__trace( "================ ATTACH PDF TO EMAIL ===============" );
+					$path = $this->_woocommerce_order_invoice_pdf( $order, "invoice-sent" );
+					$attachments[] = $path;
+                    woocomm_invfox__trace( $attachments );
+				}
+				return $attachments;
+
 			} else {
 				return array();
 			}
@@ -660,6 +679,39 @@ function woocomm_invfox_get_item_attributes( $item ) {
 	}
 
 	return $res;
+}
+
+function woocomm_invfox_get_order_item_variations( $item ) {
+
+    $res = "";
+    
+    $product = $item->get_product();
+    
+    // Only for product variation
+    if( $product->is_type('variation') ){
+
+        // Get the variation attributes
+        $variation_attributes = $product->get_variation_attributes();
+        
+        // Loop through each selected attributes
+        foreach($variation_attributes as $attribute_taxonomy => $term_slug ){
+
+            // Get product attribute name or taxonomy
+            $taxonomy = str_replace('attribute_', '', $attribute_taxonomy );
+            
+            // The label name from the product attribute
+            $attribute_name = wc_attribute_label( $taxonomy, $product );
+            
+            // The term name (or value) from this attribute
+            if( taxonomy_exists($taxonomy) ) {
+                $attribute_value = get_term_by( 'slug', $term_slug, $taxonomy )->name;
+            } else {
+                $attribute_value = $term_slug; // For custom product attributes
+            }
+            $res .= "- " . $attribute_name . ": " . $attribute_value . "\n";
+        }
+    }
+    return $res;
 }
 
 function parseVatLevels($string) {
