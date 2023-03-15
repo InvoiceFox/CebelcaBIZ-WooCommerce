@@ -66,13 +66,13 @@ class StrpcRes {
     $this->res = $res;
   }
   
-  function isErr() { return false; } /// TODO -- look at HTTP response codes for errors (like validation, ect..) and communicate this out !!!!!!!!!!!!!!!!!!!!!!!!!!
+    function isErr() { return array_key_exists('err', $this->res[0][0]); } /// TODO -- look at HTTP response codes for errors (like validation, ect..) and communicate this out !!!!!!!!!!!!!!!!!!!!!!!!!!
   
-  function isOk() { return true; }
-  
-  function getErr() { return print_r($this->res, true); }
-  
-  function getData() { return $this->res[0]; }
+    function isOk() { return true; }
+    
+    function getErr() { return $this->res[0][0]; }
+    
+    function getData() { return $this->res[0]; }
   
 }
 ?>

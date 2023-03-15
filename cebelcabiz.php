@@ -3,7 +3,7 @@
  * Plugin Name: Cebelca BIZ
  * Plugin URI:
  * Description: Connects WooCommerce to Cebelca.biz for invoicing and optionally inventory
- * Version: 0.0.100
+ * Version: 0.0.101
  * Author: JankoM
  * Author URI: http://refaktorlabs.com
  * Developer: Janko M.
@@ -17,25 +17,25 @@
 
 if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 
-    //	ini_set('display_errors', 1);
-	//error_reporting(E_ALL);
-    //ini_set("log_errors", 1);
+    // ini_set('display_errors', 1);
+	// error_reporting(E_ALL);
+    // ini_set("log_errors", 1);
     
 	require_once( dirname( __FILE__ ) . '/lib/invfoxapi.php' );
 	require_once( dirname( __FILE__ ) . '/lib/strpcapi.php' );
 
     // SET TO TRUE OF FALSE TO DEBUG
-    define("WOOCOMM_INVFOX_DEBUG", false);
-
+    define("WOOCOMM_INVFOX_DEBUG", true);
+    
 	function woocomm_invfox__trace( $x, $y = "" ) {
         //global $woocomm_invfox__debug;
-      if (WOOCOMM_INVFOX_DEBUG) {
-             error_log( "WC_Cebelcabiz: " . ( $y ? $y . " " : "" ) . print_r( $x, true ) );
-      }
+        if (WOOCOMM_INVFOX_DEBUG) {
+            error_log( "WC_Cebelcabiz: " . ( $y ? $y . " " : "" ) . print_r( $x, true ) );
+        }
 	}
-
-	$conf = null;
-
+                                           
+    $conf = null;
+    
 	class WC_Cebelcabiz {
 
 		/**
@@ -339,6 +339,26 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 				foreach ( $order->get_items() as $item ) {
 					if ( 'line_item' == $item['type'] ) {
 						$product        = $item->get_product(); // $order->get_product_from_item( $item );
+                        woocomm_invfox__trace( "PRODUCT::: ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" );
+                        woocomm_invfox__trace( $product );
+
+                        $mu_ = $product->get_meta( 'unit_of_measurement', true );
+                        $mu = $mu_ ? $mu_ : "";
+
+                        $price = $product->get_price_excluding_tax();
+                        $quantity = $item->get_quantity();
+                        $subtotal = $item->get_total(); //  + $item->get_subtotal_tax();
+                        $discounted_price = $subtotal / $quantity;
+                        $discount_percentage = round(100 - ( $discounted_price / $price ) * 100, 2);
+
+                        woocomm_invfox__trace("PRICE QTY SUBTOTAL");
+                        woocomm_invfox__trace($price);
+                        woocomm_invfox__trace($quantity);
+                        woocomm_invfox__trace($subtotal);
+                        woocomm_invfox__trace("DISCOUNT");
+                        woocomm_invfox__trace($discounted_price);
+                        woocomm_invfox__trace($discount_percentage);
+                        
 						$attributes_str = woocomm_invfox_get_item_attributes( $item );
                         $variation_str  = woocomm_invfox_get_order_item_variations( $item );
 						$body2[]        = array(
@@ -348,11 +368,11 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
                             $product->get_title() .
                             ( $attributes_str ? "\n" . $attributes_str : "" ) . // ( $this->conf['add_post_content_in_item_descr'] == "yes" ? "\n" . $product->get_content : "" ),
                             ( $variation_str ? "\n" . $variation_str : "" ), // ( $this->conf['add_post_content_in_item_descr'] == "yes" ? "\n" . $product->get_content : "" ),q
-							'qty'      => $item['qty'],
-							'mu'       => '',
-							'price'    => round( $item['line_total'] / $item['qty'], $this->conf['round_calculated_netprice_to'] ),
+							'qty'      => $quantity,
+							'mu'       => $mu,
+							'price'    => $price, // round( $item['line_total'] / $item['qty'], $this->conf['round_calculated_netprice_to'] ),
 							'vat'      => calculatePreciseSloVAT($item['line_total'], $item['line_tax'], $vatLevels),
-							'discount' => 0
+							'discount' => $discount_percentage
 						);
 					}
 				}
@@ -441,6 +461,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 						if ( $this->conf['fiscal_mode'] == "yes" &&
                              isPaymentAmongst($order->get_payment_method_title(), $this->conf['fiscalize_payment_methods'])) {                            
                             woocomm_invfox__trace( "--- fiscal ----" );
+                            woocomm_invfox__trace( $this->conf );
                             if ( $this->conf['fiscal_id_location'] && 
                                  $this->conf['fiscal_op_tax_id'] && 
                                  $this->conf['fiscal_op_name']

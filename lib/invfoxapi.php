@@ -238,7 +238,10 @@ class InvfoxAPI {
   function finalizeInvoice($header)
   {
   $res = $this->api->call('invoice-sent', 'finalize-invoice', $header);
+  woocomm_invfox__trace($res);
   if ($res->isErr()) {
+      woocomm_invfox__trace("ERROR HAPPENED:");
+      woocomm_invfox__trace($res->getErr());
     echo 'error' . $res->getErr();
   } else {
     $resD = $res->getData();

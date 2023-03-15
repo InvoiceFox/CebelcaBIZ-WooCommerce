@@ -299,7 +299,7 @@ if ( ! class_exists( 'WC_Integration_Cebelcabiz' ) && class_exists( 'WC_Integrat
               'title'             => __( 'Davčno potrjevanje računov', 'woocommerce-integration-demo' ),
               'type'              => 'checkbox',
               'label'             => __( 'Aktiviraj davčno potrjevanje', 'woocommerce-integration-demo' ),
-              'description'       => __( 'Če imate zgoraj nastavljeno, naj se računi tudi izdajo in so ti "gotovonski" (po FURS) potem aktivirajte sledeče. Račune lahko davčno potrjujete tudi sami v Čebelci.', 'woocommerce-integration-demo' ),
+              'description'       => __( 'Če imate zgoraj nastavljeno, naj se računi tudi izdajo in so ti "gotovinski" (po FURS) potem aktivirajte sledeče. Račune lahko davčno potrjujete tudi sami v Čebelci.', 'woocommerce-integration-demo' ),
               'desc_tip'          => true,
               'default'           => '',
 		    ),
@@ -321,7 +321,8 @@ if ( ! class_exists( 'WC_Integration_Cebelcabiz' ) && class_exists( 'WC_Integrat
 		    'default'           => '',
             //		    'description'       => __( 'Required if fiscalisation activated.', 'woocommerce-integration-demo' ),
 		    ),
-	      array(
+	      'fiscal_id_location' =>
+          array(
 		    'title'             => __( 'ID prostora in blagajne', 'woocommerce-integration-demo' ),
 		    'type'              => 'text',
 		    'description'       => __( 'Zahtevan podatek, če imate aktivirano avtom. davčno potrjevanje. Številski podatek, najdete ga na strani Podatki & ID-ji (na dnu).', 'woocommerce-integration-demo' ),
