@@ -393,7 +393,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 					}
 
 					$body2[] = array(
-						'title'    => $order->get_shipping_method(),
+						'title'    => "Dostava - " . $order->get_shipping_method(),
 						'qty'      => 1,
 						'mu'       => '',
 						'price'    => $order->get_shipping_total(),
