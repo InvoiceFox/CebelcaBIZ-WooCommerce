@@ -25,7 +25,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 	require_once( dirname( __FILE__ ) . '/lib/strpcapi.php' );
 
     // SET TO TRUE OF FALSE TO DEBUG
-    define("WOOCOMM_INVFOX_DEBUG", true);
+    define("WOOCOMM_INVFOX_DEBUG", false);
     
 	function woocomm_invfox__trace( $x, $y = "" ) {
         //global $woocomm_invfox__debug;
