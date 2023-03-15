@@ -19,3 +19,9 @@ Dodatek je prosto dostopen vsem in je na voljo "kot je". Če potrebujete dodatne
 ## Avtor
 
 Janko Metelko za Refaktor d.o.o.
+
+## Dnevnik sprememb
+
+01.03.2023: besedilo variacije izdelka se prenese na naziv postavke
+
+15.03.2023: Popust se sedaj izračuna iz "item totals" in cene izdelka, bodite pozorni, enota se prenese če je v _meta "unit_of_measurment" pri produktu, popravek buga pri fiskalizaciji - id lokacije se ni shranila v nastavitve
