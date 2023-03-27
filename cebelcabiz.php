@@ -345,12 +345,20 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
                         $mu_ = $product->get_meta( 'unit_of_measurement', true );
                         $mu = $mu_ ? $mu_ : "";
 
-                        $price = $product->get_price_excluding_tax();
+                        $price = wc_get_price_excluding_tax( $product );
+                        //$price = $product->get_price_excluding_tax();
                         $quantity = $item->get_quantity();
                         $subtotal = $item->get_total(); //  + $item->get_subtotal_tax();
-                        $discounted_price = $subtotal / $quantity;
-                        $discount_percentage = round(100 - ( $discounted_price / $price ) * 100, 2);
-
+                        if ($quantity != 0) { 
+                            $discounted_price = $subtotal / $quantity;
+                        } else {
+                            $discounted_price = 0;
+                        }
+                        if ($price != 0) {
+                            $discount_percentage = round(100 - ( $discounted_price / $price ) * 100, 2);
+                        } else {
+                            $discount_percentage = 0;
+                        }
                         woocomm_invfox__trace("PRICE QTY SUBTOTAL");
                         woocomm_invfox__trace($price);
                         woocomm_invfox__trace($quantity);
@@ -763,14 +771,17 @@ function isPaymentAmongst($po, $options){
 function calculatePreciseSloVAT($netPrice, $vatValue, $vatLevels) {
 	// because of new EU rules all EU VAT levels are valid here
 	// $vatLevels = array();
-	$vat1 = round( $vatValue / $netPrice * 100, 1);
-	$vat = -1;
-	foreach ($vatLevels as $vatLevel) {
-		if (abs($vat1 - $vatLevel) < 0.5) {
-			$vat = $vatLevel;
-		}
-	}
-	
+    if ($netPrice != 0) {
+        $vat1 = round( $vatValue / $netPrice * 100, 1);
+        $vat = -1;
+        foreach ($vatLevels as $vatLevel) {
+            if (abs($vat1 - $vatLevel) < 0.5) {
+                $vat = $vatLevel;
+            }
+        }
+	} else {
+        $vat = 0;
+    }
 	return $vat;
 }
 
