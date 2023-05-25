@@ -3,7 +3,7 @@
  * Plugin Name: Cebelca BIZ
  * Plugin URI:
  * Description: Connects WooCommerce to Cebelca.biz for invoicing and optionally inventory
- * Version: 0.0.101
+ * Version: 0.0.103
  * Author: JankoM
  * Author URI: http://refaktorlabs.com
  * Developer: Janko M.
@@ -25,7 +25,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 	require_once( dirname( __FILE__ ) . '/lib/strpcapi.php' );
 
     // SET TO TRUE OF FALSE TO DEBUG
-    define("WOOCOMM_INVFOX_DEBUG", false);
+    define("WOOCOMM_INVFOX_DEBUG", true);
     
 	function woocomm_invfox__trace( $x, $y = "" ) {
         //global $woocomm_invfox__debug;
@@ -67,6 +67,8 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 			add_action( 'woocommerce_order_status_on-hold', array( $this, '_woocommerce_order_status_on_hold' ) );
 			add_action( 'woocommerce_order_status_processing', array( $this, '_woocommerce_order_status_processing' ) );
 			add_action( 'woocommerce_order_status_completed', array( $this, '_woocommerce_order_status_completed' ) );
+
+            add_action( 'rest_api_init', 'create_custom_endpoint' );
             
 			// collects attachment on order complete email sent
 			add_filter( 'woocommerce_email_attachments', array( $this, '_attach_invoice_pdf_to_email' ), 10, 3 );
@@ -255,6 +257,9 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 		}
         
 		function _woocommerce_order_status_processing( $order ) {
+            if ( strpos($this->conf['on_order_processing'], "create_proforma") !== false) {
+                $this->_make_document_in_invoicefox( $order, "proforma" );
+			}
 			if ( $this->conf['on_order_processing'] == "create_invoice_draft" ) {
 				$this->_make_document_in_invoicefox( $order, 'invoice_draft' );
 			}
@@ -262,6 +267,10 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 
 
 		function _woocommerce_order_status_completed( $order ) {
+
+            if ( strpos($this->conf['on_order_completed'], "create_proforma") !== false) {
+                $this->_make_document_in_invoicefox( $order, "proforma" );
+			}
 
             if ( $this->conf['on_order_completed'] == "create_invoice_draft" ) {
 				$this->_make_document_in_invoicefox( $order, 'invoice_draft' );
@@ -561,11 +570,24 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 						'days_valid' => $this->conf['proforma_days_valid'],
 						'id_partner' => $clientId,
 						'taxnum'     => '-',
-						'pub_notes'  => $this->conf['order_num_label'] . ' #' . $order->get_id()
+                        'id_document_ext' => $order->get_id(),
+						'pub_notes'       => $this->conf['order_num_label'] . ' #' . $order->get_order_number()
+
 					), $body2 );
 
 					if ( $r2->isOk() ) {
-						$invA = $r2->getData();
+
+                        woocomm_invfox__trace( "** UPLOADING INVOICE **" );
+                        
+						$upload_path    = $uploads['basedir'] . "/invoices";
+                        $filename = $api->downloadPDF( 0, $order->get_id(), $upload_path, 'preinvoice', '' );
+                        
+						add_post_meta( $order->get_id(), 'invoicefox_attached_pdf', $filename );
+						$order->save();
+                        woocomm_invfox__trace($filename );
+                        woocomm_invfox__trace( "** UPLOADING INVOICE END **" );
+
+                        $invA = $r2->getData();
                         $docnum = $invA[0]['title'] ? $invA[0]['title'] : "OSNUTEK";
 						$order->add_order_note( "Predračun {$docnum} je bil ustvarjen na {$this->conf['app_name']}." );
                         //						$order->add_order_note( "ProForma Invoice No. {$invA[0]['title']} was created at {$this->conf['app_name']}." );
@@ -617,13 +639,14 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 
 			return $file;
 		}
-
+        
 		function _attach_invoice_pdf_to_email( $attachments, $status, $order ) {
-
-            if ( isset( $status ) && in_array( $status, array( 'customer_on_hold_order' ) ) ) {
-
-                if ( $this->conf['on_order_on_hold'] == "create_proforma_email")  {
-
+            
+            if ( isset( $status ) && in_array( $status, array( 'customer_on_hold_order' , 'customer_processing_order' ) ) ) {
+                
+                if ( $this->conf['on_order_on_hold'] == "create_proforma_email" ||
+                     $this->conf['on_order_processing'] == "create_proforma_email") {
+                    
                     woocomm_invfox__trace( "================ ATTACH PROFORMA FILTER CALLED  ===============" );
                     woocomm_invfox__trace( "================ ATTACH PDF TO EMAIL ===============" );
 					$path = $this->_woocommerce_order_invoice_pdf( $order, "preinvoice" );
@@ -634,7 +657,15 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
                 
             } else if ( isset( $status ) && in_array( $status, array( 'customer_completed_order' ) ) ) {
 
-                if ($this->conf['on_order_completed'] == "create_invoice_complete_email" ||
+                if ( $this->conf['on_order_completed'] == "create_proforma_email") {
+                    
+                    woocomm_invfox__trace( "================ ATTACH PROFORMA FILTER CALLED  ===============" );
+                    woocomm_invfox__trace( "================ ATTACH PDF TO EMAIL ===============" );
+					$path = $this->_woocommerce_order_invoice_pdf( $order, "preinvoice" );
+					$attachments[] = $path;
+                    woocomm_invfox__trace( $attachments );
+                    
+				} else if ($this->conf['on_order_completed'] == "create_invoice_complete_email" ||
                     $this->conf['on_order_completed'] == "create_invoice_complete_paid_email" ||
                     $this->conf['on_order_completed'] == "create_invoice_complete_paid_inventory_email" ||
                     $this->conf['on_order_completed'] == "email" ) {
@@ -783,6 +814,45 @@ function calculatePreciseSloVAT($netPrice, $vatValue, $vatLevels) {
         $vat = 0;
     }
 	return $vat;
+}
+
+
+function my_api_endpoint_callback() {
+    $sku = $_GET['sku'];
+    $quantity = $_GET['quantity'];
+    // Your code to update inventory quantity based on the provided SKU and quantity
+}
+
+function get_products_by_status() {
+    update_product_quantity(array( "CHI1" => 4321 ));
+    return "YOYO!!!";
+}
+
+function create_custom_endpoint() {
+    register_rest_route( 'custom', '/products/(?P<status>\w+)', array(
+        'methods'  => 'GET',
+        'callback' => 'get_products_by_status',
+        'args'     => array(
+            'status' => array(
+                'required' => true,
+                'validate_callback' => function($param, $request, $key) {
+                    return is_string($param) && preg_match('/^(instock|outofstock)$/', $param);
+                },
+            ),
+        ),
+    ) );
+}
+
+
+function update_product_quantity($sku_quantity_array) {
+    foreach ($sku_quantity_array as $sku => $quantity) {
+        $product_id = wc_get_product_id_by_sku($sku);
+        $product = wc_get_product($product_id);
+        if ($product) {
+            $product->set_stock_quantity($quantity);
+            $product->save();
+        }
+    }
 }
 
 ?>

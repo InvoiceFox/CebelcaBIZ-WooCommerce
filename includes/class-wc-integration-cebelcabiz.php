@@ -257,6 +257,7 @@ if ( ! class_exists( 'WC_Integration_Cebelcabiz' ) && class_exists( 'WC_Integrat
                 'options'       => array(
                                          'blank'=> __( 'Brez akcije', 'wps' ),
                                          'create_proforma'=> __( 'Ustvari predračun', 'wps' ),
+                                         'create_proforma_email'=> __( 'Ustvari predračun, pošlji PDF po e-pošti', 'wps' ),
                                          'create_invoice_draft'=> __( 'Ustvari osnutek računa', 'wps' ),
                                          )
                 ),
@@ -270,6 +271,7 @@ if ( ! class_exists( 'WC_Integration_Cebelcabiz' ) && class_exists( 'WC_Integrat
                 'options'       => array(
                                          'blank'=> __( 'Brez akcije', 'wps' ),
                                          'create_proforma'=> __( 'Ustvari predračun', 'wps' ),
+                                         'create_proforma_email'=> __( 'Ustvari predračun, pošlji PDF po e-pošti', 'wps' ),
                                          'create_invoice_draft'=> __( 'Ustvari osnutek računa', 'wps' ),
                                          'create_invoice_complete'=> __( 'Ustvari in izdaj račun', 'wps' ),
                                          'create_invoice_complete_email'=> __( 'Ustvari in izdaj račun, pošlji PDF po e-pošti', 'wps' ),

@@ -89,8 +89,12 @@ class InvfoxAPI {
         'header'=>"Authorization: Basic ".base64_encode($this->api->apitoken.':x')."\r\n" 
         )
       );
+    $title = "Račun%20št.";
+    if ($res == "preinvoice") {
+        $title = "Predračun%20št.";
+    }
     $context = stream_context_create($opts);
-    $data = file_get_contents("https://{$this->api->domain}/API-pdf?id=$id&extid=$extid&res={$res}&format=PDF&doctitle=Račun%20št.&lang=si&hstyle={$hstyle}", false, $context);
+    $data = file_get_contents("https://{$this->api->domain}/API-pdf?id=$id&extid=$extid&res={$res}&format=PDF&doctitle={$title}&lang=si&hstyle={$hstyle}", false, $context);
 
     woocomm_invfox__trace("----------- === XOXOXOXOXOXO === ------------");
     woocomm_invfox__trace("https://{$this->api->domain}/API-pdf?id=$id&extid=$extid&res={$res}&format=PDF&doctitle=Račun%20št.&lang=si&hstyle={$hstyle}");
