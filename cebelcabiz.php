@@ -25,7 +25,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 	require_once( dirname( __FILE__ ) . '/lib/strpcapi.php' );
 
     // SET TO TRUE OF FALSE TO DEBUG
-    define("WOOCOMM_INVFOX_DEBUG", true);
+    define("WOOCOMM_INVFOX_DEBUG", false);
     
 	function woocomm_invfox__trace( $x, $y = "" ) {
         //global $woocomm_invfox__debug;
@@ -578,7 +578,8 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 					if ( $r2->isOk() ) {
 
                         woocomm_invfox__trace( "** UPLOADING INVOICE **" );
-                        
+
+                        $uploads     = wp_upload_dir();
 						$upload_path    = $uploads['basedir'] . "/invoices";
                         $filename = $api->downloadPDF( 0, $order->get_id(), $upload_path, 'preinvoice', '' );
                         
