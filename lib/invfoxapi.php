@@ -1,4 +1,29 @@
 <?php
+
+$responseHeaders = array();
+
+// SET TO TRUE OF FALSE TO DEBUG
+define("WOOCOMM_INVFOX_DEBUG2", false);
+
+function woocomm_invfox__trace2( $x, $y = "" ) {
+    //global $woocomm_invfox__debug;
+    if (WOOCOMM_INVFOX_DEBUG2) {
+        error_log( "WC_Cebelcabiz2: " . ( $y ? $y . " " : "" ) . print_r( $x, true ) );
+    }
+}
+
+function readHeader($ch, $header)
+{
+    woocomm_invfox__trace2("READ HEADERS");
+    global $responseHeaders;
+    $url = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+    $responseHeaders[$url][] = $header;
+    woocomm_invfox__trace2($header);
+    return strlen($header);
+}
+
+
+
 class InvfoxAPI {
 
   var $api;
@@ -81,45 +106,86 @@ class InvfoxAPI {
   // res - resource of the PDF (invoice-sent / preinvoice / transfer)
   // hstyle - runtime header_style if needed (othervise taken from user settings)
   function downloadPDF($id, $extid, $path, $res='invoice-sent', $hstyle='') {
-    // $res - invoice-sent / preinvoice / transfer
-    echo $id;
-    $opts = array(
-      'http'=>array(
-        'method'=>"GET",
-        'header'=>"Authorization: Basic ".base64_encode($this->api->apitoken.':x')."\r\n" 
+      // $res - invoice-sent / preinvoice / transfer
+      // echo $id;
+      // CURL METHOD - WANTED TO GET ORIGINAL NAME FROM HEADER, TODO LATER
+      /*     
+      $title = "Račun%20št.";
+      if ($res == "preinvoice") {
+          $title = "Predračun%20št.";
+      }
+      
+      $url = "https://{$this->api->domain}/API-pdf?id=$id&extid=$extid&res={$res}&format=PDF&doctitle={$title}&lang=si&hstyle={$hstyle}";
+      $authHeader = [
+          // "Authorization" => "Bearer MY_TOKEN",
+          "Authorization" => "Basic ".base64_encode($this->api->apitoken.':x')."\r\n" 
+      ];
+      
+      $curl = curl_init($url);
+      curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+      curl_setopt($curl, CURLOPT_HTTPHEADER, $authHeader);
+      curl_setopt($curl, CURLOPT_HEADERFUNCTION, 'readHeader');
+      
+      $response = curl_exec($curl);
+      $fileInfo = curl_getinfo($curl);
+      woocomm_invfox__trace2("----------- === *******XOXOXOXOXOXO === ------------");
+      woocomm_invfox__trace2($fileInfo);
+      woocomm_invfox__trace2("----------- === *******XOXOXOXOXOXO222 === ------------");
+      woocomm_invfox__trace2($responseHeaders);
+
+      $filename = $fileInfo["filename"];
+      
+      if ($response) {
+          $filePath = $path . "/" . $filename;
+          file_put_contents($filePath, $response);
+          //          echo "File downloaded successfully.";
+      } else {
+          echo "Error downloading file: " . curl_error($curl);
+      }
+      
+      curl_close($curl);
+      */
+      
+      $opts = array(
+          'http'=>array(
+              'method'=>"GET",
+              'header'=>"Authorization: Basic ".base64_encode($this->api->apitoken.':x')."\r\n" 
         )
       );
-    $title = "Račun%20št.";
-    if ($res == "preinvoice") {
-        $title = "Predračun%20št.";
-    }
-    $context = stream_context_create($opts);
-    $data = file_get_contents("https://{$this->api->domain}/API-pdf?id=$id&extid=$extid&res={$res}&format=PDF&doctitle={$title}&lang=si&hstyle={$hstyle}", false, $context);
+      $title = "Račun%20št.";
+      if ($res == "preinvoice") {
+          $title = "Predračun%20št.";
+      }
+      $context = stream_context_create($opts);
+      $data = file_get_contents("https://{$this->api->domain}/API-pdf?id=$id&extid=$extid&res={$res}&format=PDF&doctitle={$title}&lang=si&hstyle={$hstyle}", false, $context);
+      // $filename = $http_response_header['filename'];
+      // $meta_data = stream_get_meta_data($data);
+      // $filename = $meta_data['uri'];
+      woocomm_invfox__trace2("----------- === DOWNLOADING PDF  === ------------");
+      woocomm_invfox__trace2("https://{$this->api->domain}/API-pdf?id=$id&extid=$extid&res={$res}&format=PDF&doctitle=Račun%20št.&lang=si&hstyle={$hstyle}");
+      // woocomm_invfox__trace($res);
 
-    woocomm_invfox__trace("----------- === XOXOXOXOXOXO === ------------");
-    woocomm_invfox__trace("https://{$this->api->domain}/API-pdf?id=$id&extid=$extid&res={$res}&format=PDF&doctitle=Račun%20št.&lang=si&hstyle={$hstyle}");
-    woocomm_invfox__trace($res);
-
-    $prefix = "racun";
-    switch($res) {
-    case "invoice-sent":
-        $prefix = "racun";
-        break;
-    case "preinvoice":
-        $prefix = "predracun";
-        break;
-    case "transfer":
-        $prefix = "dobavnica";
-        break;
-    }
+      $prefix = "racun";
+      switch($res) {
+      case "invoice-sent":
+          $prefix = "racun";
+          break;
+      case "preinvoice":
+          $prefix = "predracun";
+          break;
+      case "transfer":
+          $prefix = "dobavnica";
+          break;
+      }
     
-    if ($data === false) {
-      echo 'error downloading PDF';
-    } else {
-      $file = $path."/{$prefix}_{$id}_{$extid}.pdf";
-      file_put_contents($file, $data);
-      return $file;
-    }
+      if ($data === false) {
+          echo 'error downloading PDF';
+      } else {
+          // $file = $filename;
+          $file = $path."/{$prefix}_{$id}_{$extid}.pdf";
+          file_put_contents($file, $data);
+          return $file;
+      }
   }
 
   // TODO -- this can be removed I think and replaced with above with args
@@ -132,11 +198,12 @@ class InvfoxAPI {
       );
     $context = stream_context_create($opts);
     $data = file_get_contents("http://{$this->api->domain}/API-pdf?id=0&extid={$id}&res={$res}&format=PDF&doctitle=Invoice%20No.&lang=si&hstyle=$hstyle", false, $context);
-
+    $filename = $http_response_header['filename'];
     if ($data === false) {
       echo 'error downloading PDF';
     } else {
-      $file = $path . "/invoice_eat2live_" . $id . ".pdf";
+        //      $file = $path . "/invoice_eat2live_" . $id . ".pdf";
+        $file = $path . "/". $filename + "";
       file_put_contents($file, $data);
       return $file;
     }

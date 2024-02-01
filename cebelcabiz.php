@@ -20,9 +20,6 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
     // ini_set('display_errors', 1);
 	// error_reporting(E_ALL);
     // ini_set("log_errors", 1);
-    
-	require_once( dirname( __FILE__ ) . '/lib/invfoxapi.php' );
-	require_once( dirname( __FILE__ ) . '/lib/strpcapi.php' );
 
     // SET TO TRUE OF FALSE TO DEBUG
     define("WOOCOMM_INVFOX_DEBUG", false);
@@ -33,6 +30,9 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
             error_log( "WC_Cebelcabiz: " . ( $y ? $y . " " : "" ) . print_r( $x, true ) );
         }
 	}
+    
+	require_once( dirname( __FILE__ ) . '/lib/invfoxapi.php' );
+	require_once( dirname( __FILE__ ) . '/lib/strpcapi.php' );
                                            
     $conf = null;
     
@@ -643,13 +643,24 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
         
 		function _attach_invoice_pdf_to_email( $attachments, $status, $order ) {
             
-            if ( isset( $status ) && in_array( $status, array( 'customer_on_hold_order' , 'customer_processing_order' ) ) ) {
+            if ( isset( $status ) && in_array( $status, array( 'customer_on_hold_order' ) ) ) {
                 
-                if ( $this->conf['on_order_on_hold'] == "create_proforma_email" ||
-                     $this->conf['on_order_processing'] == "create_proforma_email") {
+                if ( $this->conf['on_order_on_hold'] == "create_proforma_email" ) {
                     
                     woocomm_invfox__trace( "================ ATTACH PROFORMA FILTER CALLED  ===============" );
-                    woocomm_invfox__trace( "================ ATTACH PDF TO EMAIL ===============" );
+                    woocomm_invfox__trace( "================ ON HOLD  ===============" );
+					$path = $this->_woocommerce_order_invoice_pdf( $order, "preinvoice" );
+					$attachments[] = $path;
+                    woocomm_invfox__trace( $attachments );
+				}
+				return $attachments;
+            }
+            else if ( isset( $status ) && in_array( $status, array( 'customer_processing_order' ) ) ) {
+                
+                if ( $this->conf['on_order_processing'] == "create_proforma_email" ) {
+                    
+                    woocomm_invfox__trace( "================ ATTACH PROFORMA FILTER CALLED  ===============" );
+                    woocomm_invfox__trace( "================ PROCESSING  ===============" );
 					$path = $this->_woocommerce_order_invoice_pdf( $order, "preinvoice" );
 					$attachments[] = $path;
                     woocomm_invfox__trace( $attachments );
@@ -661,7 +672,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
                 if ( $this->conf['on_order_completed'] == "create_proforma_email") {
                     
                     woocomm_invfox__trace( "================ ATTACH PROFORMA FILTER CALLED  ===============" );
-                    woocomm_invfox__trace( "================ ATTACH PDF TO EMAIL ===============" );
+                    woocomm_invfox__trace( "================ COMPLETED ===============" );
 					$path = $this->_woocommerce_order_invoice_pdf( $order, "preinvoice" );
 					$attachments[] = $path;
                     woocomm_invfox__trace( $attachments );
@@ -672,7 +683,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
                     $this->conf['on_order_completed'] == "email" ) {
                     
                     woocomm_invfox__trace( "================ ATTACH FILTER CALLED  ===============" );
-                    woocomm_invfox__trace( "================ ATTACH PDF TO EMAIL ===============" );
+                    woocomm_invfox__trace( "================ COMPLETED  ===============" );
 					$path = $this->_woocommerce_order_invoice_pdf( $order, "invoice-sent" );
 					$attachments[] = $path;
                     woocomm_invfox__trace( $attachments );
@@ -807,7 +818,7 @@ function calculatePreciseSloVAT($netPrice, $vatValue, $vatLevels) {
         $vat1 = round( $vatValue / $netPrice * 100, 1);
         $vat = -1;
         foreach ($vatLevels as $vatLevel) {
-            if (abs($vat1 - $vatLevel) < 0.5) {
+            if (abs($vat1 - $vatLevel) < 1.5) {
                 $vat = $vatLevel;
             }
         }
