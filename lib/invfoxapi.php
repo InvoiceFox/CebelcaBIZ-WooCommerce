@@ -203,7 +203,7 @@ class InvfoxAPI {
       echo 'error downloading PDF';
     } else {
         //      $file = $path . "/invoice_eat2live_" . $id . ".pdf";
-        $file = $path . "/". $filename + "";
+        $file = $path . "/". $filename;
       file_put_contents($file, $data);
       return $file;
     }
