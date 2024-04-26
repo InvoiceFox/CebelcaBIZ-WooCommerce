@@ -209,18 +209,21 @@ class InvfoxAPI {
     }
   }
 
-  function markInvoicePaid($id, $payment_method=1) {
-    $res = $this->api->call('invoice-sent-p', 'mark-paid', array('id_invoice_sent_ext' => $id, 
-                                                                 'date_of' => date("Y-m-d"), 'amount' => 0, 'id_payment_method' => $payment_method, 'id_invoice_sent' => 0));
+  function markInvoicePaid($id, $payment_method) {
+    $res = $this->api->call('invoice-sent-p', 'mark-paid-2', array('id_invoice_sent_ext' => $id, 
+                                                                 'date_of' => date("Y-m-d"), 'amount' => 0, 'payment_method' => $payment_method, 'id_invoice_sent' => 0));
     
     if ($res->isErr()) {
       echo 'error' . $res->getErr();
     }
   }
   
-  function markInvoicePaid2($invid, $payment_method=1) {
-    $res = $this->api->call('invoice-sent-p', 'mark-paid', array('id_invoice_sent_ext' => 0, 
-                                                                 'date_of' => date("Y-m-d"), 'amount' => 0, 'id_payment_method' => $payment_method, 'id_invoice_sent' => $invid));
+  function markInvoicePaid2($invid, $payment_method) {
+    $res = $this->api->call('invoice-sent-p', 'mark-paid-2', array('id_invoice_sent_ext' => $id, 
+                                                                 'date_of' => date("Y-m-d"), 'amount' => 0, 'payment_method' => $payment_method, 'id_invoice_sent' => $invid));
+
+    woocomm_invfox__trace( $res );
+    woocomm_invfox__trace( $res );
     
     if ($res->isErr()) {
       echo 'error' . $res->getErr();

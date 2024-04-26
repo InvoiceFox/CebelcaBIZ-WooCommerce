@@ -66,7 +66,12 @@ class StrpcRes {
     $this->res = $res;
   }
   
-    function isErr() { return array_key_exists('err', $this->res[0][0]); } /// TODO -- look at HTTP response codes for errors (like validation, ect..) and communicate this out !!!!!!!!!!!!!!!!!!!!!!!!!!
+    function isErr() {
+        // woocomm_invfox__trace( "*  **  * * **  **");
+        // woocomm_invfox__trace( $this->res[0] );
+        // woocomm_invfox__trace( $this->res[0] == "validation" );
+        return $this->res[0] == "validation" || array_key_exists('err', $this->res[0][0]);
+    } /// TODO -- look at HTTP response codes for errors (like validation, ect..) and communicate this out !!!!!!!!!!!!!!!!!!!!!!!!!!
   
     function isOk() { return true; }
     

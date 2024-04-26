@@ -49,7 +49,8 @@ if ( ! class_exists( 'WC_Integration_Cebelcabiz' ) && class_exists( 'WC_Integrat
       $this->fiscal_id_location = $this->get_option( 'fiscal_id_location' );
       $this->fiscal_op_tax_id = $this->get_option( 'fiscal_op_tax_id' );
       $this->fiscal_op_name = $this->get_option( 'fiscal_op_name' );
-      $this->fiscal_op_name = $this->get_option( 'vat_levels_list', "0, 5, 9.5, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27" );
+      $this->vat_levels_list = $this->get_option( 'vat_levels_list', "0, 5, 9.5, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27" );
+      $this->payment_methods_map = $this->get_option( 'payment_methods_map', "PayPal->PayPal;Gotovina->Gotovina" );
       $this->fiscalize_payment_methods = $this->get_option( 'fiscalize_payment_methods', "* - vsi" );
       // Actions.
       add_action( 'woocommerce_update_options_integration_' .  $this->id, array( $this, 'process_admin_options' ) );
@@ -226,6 +227,13 @@ if ( ! class_exists( 'WC_Integration_Cebelcabiz' ) && class_exists( 'WC_Integrat
 		    'type'              => 'text',
 		    'default'           => '',
 		    'description'       => __( 'Tu v obliki seznama kjer so vrednosti ločene z vejico, decimalka pa uporablja piko naštejete vse davčne stopnje, ki so možne v vaši trgovini.', 'woocommerce-integration-demo' ),
+		    ),
+	      'payment_methods_map' => 
+	      array(
+		    'title'             => __( 'Pretvorba načinov plačila', 'woocommerce-integration-demo' ),
+		    'type'              => 'text',
+		    'default'           => '',
+		    'description'       => __( 'Tu v obliki "Način plačila woocomerce->Način plačila Čebelca;...." vnesete kako se naj načini plačila v vašem Woocommerce pretvorijo v načina plačila na Čebelci', 'woocommerce-integration-demo' ),
 		    ),
 
           'section_actions' => array(
