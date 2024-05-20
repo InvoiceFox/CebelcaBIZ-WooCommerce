@@ -476,7 +476,10 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 						'taxnum'          => '-',
 						'doctype'         => $this->conf['document_to_make'] == 'advance_draft' ? 1 : 0,
 						'id_document_ext' => $order->get_id(),
-						'pub_notes'       => $this->conf['order_num_label'] . ' #' . $order->get_order_number()
+						'pub_notes'       => $this->conf['order_num_label'] . ' #' . $order->get_order_number() 
+						// , // uncomment these 3 lines if invoices are always already paid when created and you want payment method to display on PDF instead of date_to_pay
+						// 'payment_act'     => "1",
+						// 'payment'         => "paid"
 					), $body2 );
 
 					if ( $r2->isOk() ) {
@@ -496,6 +499,9 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 						'doctype'         => 0,
 						'id_document_ext' => $order->get_id(),
 						'pub_notes'       => $this->conf['order_num_label'] . ' #' . $order->get_order_number()
+						// , // uncomment these 3 lines if invoices are always already paid when created and you want payment method to display on PDF instead of date_to_pay
+						// 'payment_act'     => "1",
+						// 'payment'         => "paid"
 					), $body2 );
 
                     $r3 = Array(Array( "new_title" => "OSNUTEK" ));
