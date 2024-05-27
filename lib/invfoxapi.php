@@ -22,7 +22,14 @@ function readHeader($ch, $header)
     return strlen($header);
 }
 
-
+function generateRandomString($length = 12) {
+  $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  $randomString = '';
+  for ($i = 0; $i < $length; $i++) {
+    $randomString .= $characters[rand(0, strlen($characters) - 1)];
+  }
+  return $randomString;
+}
 
 class InvfoxAPI {
 
@@ -181,8 +188,9 @@ class InvfoxAPI {
       if ($data === false) {
           echo 'error downloading PDF';
       } else {
+          $rand1 = generateRandomString(21);
           // $file = $filename;
-          $file = $path."/{$prefix}_{$id}_{$extid}.pdf";
+          $file = $path."/{$prefix}_{$id}_{$extid}_{$rand1}.pdf";
           file_put_contents($file, $data);
           return $file;
       }
