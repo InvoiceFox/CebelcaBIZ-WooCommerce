@@ -1,12 +1,12 @@
-<?php
+
 /*
-Plugin Name: My Plugin
-Plugin URI: https://example.com/my-plugin
-Description: This is my awesome plugin!
-Version: 1.0
-Author: My Name
-Author URI: https://example.com/
-License: GPL2
+Plu gin Name: My Plugin
+Plu gin URI: https://example.com/my-plugin
+Des cription: This is my awesome plugin!
+Ver sion: 1.0
+Aut hor: My Name
+Aut hor URI: https://example.com/
+Lic ense: GPL2
 */
 
 // Include the Plugin Update Checker library
@@ -32,4 +32,3 @@ add_action( 'wp_ajax_nopriv_my_plugin_check_for_updates', array( $my_plugin_upda
 if ( ! wp_next_scheduled( 'my_plugin_check_for_updates' ) ) {
 	wp_schedule_event( time(), 'daily', 'my_plugin_check_for_updates' );
 }
-?>
