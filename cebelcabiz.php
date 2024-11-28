@@ -207,7 +207,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 		}
 
 		function process_custom_order_action_mark_invoice_paid( $order ) {
-			$api = new InvfoxAPI( $this->conf['api_key'], $this->conf['api_domain'], true );
+			$api = new InvfoxAPI( $this->conf['api_key'], $this->conf['api_domain'], false );
 			$api->setDebugHook( "woocomm_invfox__trace" );
             $currentPM = $order->get_payment_method_title();
             woocomm_invfox__trace( "================ MARKING PAID ===============" );
