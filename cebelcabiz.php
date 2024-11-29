@@ -247,7 +247,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 				}
 			}
 
-			$api = new InvfoxAPI( $this->conf['api_key'], $this->conf['api_domain'], true );
+			$api = new InvfoxAPI( $this->conf['api_key'], $this->conf['api_domain'], false );
 			$api->setDebugHook( "woocomm_invfox__trace" );
 
 			$resp = $api->checkInvtItems( $items, $this->conf['from_warehouse_id'], $api->_toSIDate( date( 'd.m.Y' ) ) );
