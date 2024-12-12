@@ -906,7 +906,7 @@ function mapPaymentMethods($key, $methodsMap){
     woocomm_invfox__trace( $mmap );
     
     // Check if the string is in the correct format using a regular expression
-    if (!preg_match('/([a-zA-Z0-9čČšŠžŽ\/_\-\(\) ]+->[a-zA-Z0-9čČšŠžŽ_\- ]+)+/', $mmap)) {
+    if (!preg_match('/([a-zA-Z0-9čČšŠžŽ\/_\-\(\)\* ]+->[a-zA-Z0-9čČšŠžŽ_\- ]+)+/', $mmap)) {
         return -1; // Return -1 if the format is incorrect
     }
 
@@ -926,6 +926,12 @@ function mapPaymentMethods($key, $methodsMap){
         if (trim($pairKey) == $key) {
             return $value; // Return the value if a match is found
         }
+	if (strpos("*", $pairKey) !== false) { // anywhere in the string for now 
+	        if (strpos($key, $pairKey) !== false) {
+	            return $value; // Return the value if a partial match is found
+	        }
+	}
+	    
     }
 
     // Return -2 if no matching key is found
