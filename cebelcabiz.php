@@ -954,6 +954,25 @@ function isPaymentAmongst($po, $options){
 }
 
 function calculatePreciseSloVAT($netPrice, $vatValue, $vatLevels) {
+    if ($netPrice == 0) {
+        return 0;
+    }
+
+    $calculatedVat = round($vatValue / $netPrice * 100, 1);
+    $closestVat = 0;
+    $minDiff = 1000;
+
+    foreach ($vatLevels as $vatLevel) {
+        $diff = abs($calculatedVat - $vatLevel);
+        if ($diff < $minDiff) {
+            $minDiff = $diff;
+            $closestVat = $vatLevel;
+        }
+    }
+    return $closestVat;
+}
+
+function calculatePreciseSloVAT_OLD($netPrice, $vatValue, $vatLevels) {
 	// because of new EU rules all EU VAT levels are valid here
 	// $vatLevels = array();
     if ($netPrice != 0) {
