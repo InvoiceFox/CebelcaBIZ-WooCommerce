@@ -3,7 +3,7 @@
  * Plugin Name: Cebelca BIZ
  * Plugin URI:
  * Description: Connects WooCommerce to Cebelca.biz for invoicing and optionally inventory
- * Version: 0.0.111
+ * Version: 0.0.112
  * Author: JankoM
  * Author URI: http://refaktorlabs.com
  * Developer: Janko M.
@@ -13,112 +13,182 @@
  *
  */
 
-// Status: Beta
+// Status: Stable
 
 if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 
-    // ini_set('display_errors', 1);
-	// error_reporting(E_ALL);
-    // ini_set("log_errors", 1);
-
-    // SET TO TRUE OF FALSE TO DEBUG
+    // Constants for plugin configuration
     define("WOOCOMM_INVFOX_DEBUG", false);
+    define("WOOCOMM_INVFOX_LOG_FILE", WP_CONTENT_DIR . '/cebelcabiz-debug.log');
+    define("WOOCOMM_INVFOX_VERSION", '0.0.112');
     
+    /**
+     * Debug logging function
+     * 
+     * @param mixed $x The data to log
+     * @param string $y Optional label for the log entry
+     * @return void
+     */
 	function woocomm_invfox__trace( $x, $y = "" ) {
-        //global $woocomm_invfox__debug;
         if (WOOCOMM_INVFOX_DEBUG) {
-            error_log( "WC_Cebelcabiz: " . ( $y ? $y . " " : "" ) . print_r( $x, true ) );
+            $message = "WC_Cebelcabiz: " . ( $y ? $y . " " : "" ) . print_r( $x, true );
+            error_log($message);
+            
+            // Also log to a dedicated file for easier debugging
+            if (defined('WOOCOMM_INVFOX_LOG_FILE')) {
+                $timestamp = date('[Y-m-d H:i:s]');
+                file_put_contents(
+                    WOOCOMM_INVFOX_LOG_FILE, 
+                    $timestamp . ' ' . $message . PHP_EOL, 
+                    FILE_APPEND
+                );
+            }
         }
 	}
     
-	require_once( dirname( __FILE__ ) . '/lib/invfoxapi.php' );
-	require_once( dirname( __FILE__ ) . '/lib/strpcapi.php' );
+	// Load required libraries
+	require_once( plugin_dir_path( __FILE__ ) . 'lib/invfoxapi.php' );
+	require_once( plugin_dir_path( __FILE__ ) . 'lib/strpcapi.php' );
                                            
-    $conf = null;
+    $conf = null; // Will be initialized in the constructor
     
+	/**
+	 * Main plugin class
+	 */
 	class WC_Cebelcabiz {
+
+		/**
+		 * Plugin configuration
+		 * @var array
+		 */
+		protected $conf = [];
+
+		/**
+		 * Default configuration values
+		 * @var array
+		 */
+		protected $defaults = [
+			'api_domain' => 'www.cebelca.biz',
+			'app_name' => 'Cebelca BIZ',
+			'use_shop_id_for_docnum' => false,
+			'fiscal_test_mode' => false,
+			'vat_levels_list' => '0, 5, 9.5, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27',
+			'payment_methods_map' => 'PayPal->PayPal;Gotovina->Gotovina',
+			'fiscalize_payment_methods' => '* - vsi',
+			'customer_general_payment_period' => '5',
+			'proforma_days_valid' => '10',
+			'partial_sum_label' => 'Seštevek',
+			'order_num_label' => 'Na osnovi naročila:',
+			'round_calculated_netprice_to' => 4,
+			'round_calculated_taxrate_to' => 1,
+			'round_calculated_shipping_taxrate_to' => 2,
+		];
 
 		/**
 		 * Construct the plugin.
 		 */
 		public function __construct() {
-            
-			$this->conf = get_option( 'woocommerce_cebelcabiz_settings' );
-
-            // error_log($this->conf);
-			if ( $this->conf ) {
-                if ( !array_key_exists('api_domain', $this->conf) ) {
-                    $this->conf['api_domain'] = "www.cebelca.biz";
-                }
-                if ( !array_key_exists('app_name', $this->conf) ) {
-                    $this->conf['app_name'] = "Cebelca BIZ";
-                }
-                if ( !array_key_exists('use_shop_id_for_docnum', $this->conf) ) {
-                    $this->conf['use_shop_id_for_docnum'] = false;
-                }
-                if ( !array_key_exists('fiscal_test_mode', $this->conf) ) {
-                    $this->conf['fiscal_test_mode'] = false;
-                }
-            }
-            
-			add_action( 'plugins_loaded', array( $this, 'init' ) );
-
-			// this sets callbacks on order status changes
-			add_action( 'woocommerce_order_status_on-hold', array( $this, '_woocommerce_order_status_on_hold' ) );
-			add_action( 'woocommerce_order_status_processing', array( $this, '_woocommerce_order_status_processing' ) );
-			add_action( 'woocommerce_order_status_completed', array( $this, '_woocommerce_order_status_completed' ) );
-
-            add_action( 'rest_api_init', 'create_custom_endpoint' );
-            
-			// collects attachment on order complete email sent
-			add_filter( 'woocommerce_email_attachments', array( $this, '_attach_invoice_pdf_to_email' ), 10, 3 );
-
-			add_action( 'admin_notices', array( $this, 'admin_notices' ) );
-
-			if ( $this->conf && $this->conf['order_actions_enabled'] ) {
-				add_action( 'woocommerce_order_actions', array( $this, 'add_order_meta_box_actions' ) );
-				// process the custom order meta box order action
-				add_action( 'woocommerce_order_action_cebelcabiz_create_invoice', array(
-					$this,
-					'process_custom_order_action_invoice'
-				) );
-				add_action( 'woocommerce_order_action_cebelcabiz_create_proforma', array(
-					$this,
-					'process_custom_order_action_proforma'
-				) );
-				add_action( 'woocommerce_order_action_cebelcabiz_create_advance', array(
-					$this,
-					'process_custom_order_action_advance'
-				) );
-				add_action( 'woocommerce_order_action_cebelcabiz_create_invt_sale', array(
-					$this,
-					'process_custom_order_action_invt_sale'
-				) );
-				add_action( 'woocommerce_order_action_cebelcabiz_check_invt_items', array(
-					$this,
-					'process_custom_order_action_check_invt_items'
-				) );
-				add_action( 'woocommerce_order_action_cebelcabiz_mark_invoice_paid', array(
-					$this,
-					'process_custom_order_action_mark_invoice_paid'
-                ) );
+            // Load configuration
+			$this->conf = get_option('woocommerce_cebelcabiz_settings', []);
+			
+			// Apply defaults for missing configuration values
+			foreach ($this->defaults as $key => $value) {
+				if (!isset($this->conf[$key])) {
+					$this->conf[$key] = $value;
+				}
 			}
+            
+			// Initialize hooks
+			$this->init_hooks();
+		}
 
-			$translArr = array(
-				0 => "invoice",
-				1 => "proforma",
-				2 => "inventory"
-			);
+		/**
+		 * Initialize all WordPress hooks
+		 */
+		private function init_hooks() {
+			// Core plugin initialization
+			add_action('plugins_loaded', array($this, 'init'));
+			
+			// Order status change hooks
+			add_action('woocommerce_order_status_on-hold', array($this, '_woocommerce_order_status_on_hold'));
+			add_action('woocommerce_order_status_processing', array($this, '_woocommerce_order_status_processing'));
+			add_action('woocommerce_order_status_completed', array($this, '_woocommerce_order_status_completed'));
+
+			// REST API endpoint
+            add_action('rest_api_init', 'create_custom_endpoint');
+            
+			// Email attachment hook
+			add_filter('woocommerce_email_attachments', array($this, '_attach_invoice_pdf_to_email'), 10, 3);
+
+			// Admin notices
+			add_action('admin_notices', array($this, 'admin_notices'));
+
+			// Order actions
+			if (!empty($this->conf) && !empty($this->conf['order_actions_enabled'])) {
+				$this->init_order_actions();
+			}
+		}
+
+		/**
+		 * Initialize order action hooks
+		 */
+		private function init_order_actions() {
+			add_action('woocommerce_order_actions', array($this, 'add_order_meta_box_actions'));
+			
+			// Process custom order actions
+			add_action('woocommerce_order_action_cebelcabiz_create_invoice', array(
+				$this,
+				'process_custom_order_action_invoice'
+			));
+			add_action('woocommerce_order_action_cebelcabiz_create_proforma', array(
+				$this,
+				'process_custom_order_action_proforma'
+			));
+			add_action('woocommerce_order_action_cebelcabiz_create_advance', array(
+				$this,
+				'process_custom_order_action_advance'
+			));
+			add_action('woocommerce_order_action_cebelcabiz_create_invt_sale', array(
+				$this,
+				'process_custom_order_action_invt_sale'
+			));
+			add_action('woocommerce_order_action_cebelcabiz_check_invt_items', array(
+				$this,
+				'process_custom_order_action_check_invt_items'
+			));
+			add_action('woocommerce_order_action_cebelcabiz_mark_invoice_paid', array(
+				$this,
+				'process_custom_order_action_mark_invoice_paid'
+			));
 		}
 
 
-        static function myplugin_activate() {
-            
+        /**
+         * Plugin activation hook callback
+         */
+        public static function myplugin_activate() {
+            // Create invoices directory if it doesn't exist
             $upload = wp_upload_dir();
-            $upload_dir = $upload['basedir'];
-            $upload_dir = $upload_dir . '/invoices';
-            if (! is_dir($upload_dir)) {
-                mkdir( $upload_dir, 0700 );
+            $upload_dir = $upload['basedir'] . '/invoices';
+            
+            if (!is_dir($upload_dir)) {
+                wp_mkdir_p($upload_dir);
+                // Set proper permissions
+                @chmod($upload_dir, 0755);
+            }
+            
+            // Create log file if debug is enabled
+            if (WOOCOMM_INVFOX_DEBUG && defined('WOOCOMM_INVFOX_LOG_FILE')) {
+                $log_dir = dirname(WOOCOMM_INVFOX_LOG_FILE);
+                if (!is_dir($log_dir)) {
+                    wp_mkdir_p($log_dir);
+                }
+                if (!file_exists(WOOCOMM_INVFOX_LOG_FILE)) {
+                    file_put_contents(
+                        WOOCOMM_INVFOX_LOG_FILE, 
+                        date('[Y-m-d H:i:s]') . ' Cebelca BIZ plugin activated' . PHP_EOL
+                    );
+                }
             }
         }
  
@@ -126,112 +196,196 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 		 * Initialize the plugin.
 		 */
 		public function init() {
-			// Checks if WooCommerce is installed.
-			if ( class_exists( 'WC_Cebelcabiz' ) ) {
-
-				// Include our integration class.
-				include_once 'includes/class-wc-integration-cebelcabiz.php';
-
-				// Register the integration.
-				add_filter( 'woocommerce_integrations', array( $this, 'add_integration' ) );
-
-			} else {
-				// throw an admin error if you like
+			// Check if WooCommerce is installed
+			if (!class_exists('WC_Integration')) {
+				add_action('admin_notices', function() {
+					echo '<div class="error"><p>' . 
+						__('Cebelca BIZ requires WooCommerce to be installed and active.', 'woocommerce-cebelcabiz') . 
+						'</p></div>';
+				});
+				return;
 			}
+
+			// Include our integration class
+			include_once plugin_dir_path(__FILE__) . 'includes/class-wc-integration-cebelcabiz.php';
+
+			// Register the integration
+			add_filter('woocommerce_integrations', array($this, 'add_integration'));
 		}
 
-		/*
+		/**
 		 * Show admin notices from stack
 		 */
-		function admin_notices() {
-			if ( $notices = get_option( 'cebelcabiz_deferred_admin_notices' ) ) {
-				foreach ( $notices as $notice ) {
-                    if (strpos($notice, "NAPAKA") === false) {
-                        echo "<div class='updated'><p>$notice</p></div>";
-                    } else {
-                        echo "<div class='updated' style='color: red;'><p>$notice</p></div>";
-                    }
+		public function admin_notices() {
+			$notices = get_option('cebelcabiz_deferred_admin_notices');
+			
+			if (!empty($notices) && is_array($notices)) {
+				foreach ($notices as $notice) {
+					$notice = wp_kses_post($notice);
+					if (strpos($notice, "NAPAKA") === false) {
+						echo "<div class='notice notice-success is-dismissible'><p>{$notice}</p></div>";
+					} else {
+						echo "<div class='notice notice-error is-dismissible'><p>{$notice}</p></div>";
+					}
 				}
-				delete_option( 'cebelcabiz_deferred_admin_notices' );
+				delete_option('cebelcabiz_deferred_admin_notices');
 			}
 		}
 
 		/**
 		 * Add our items for order actions box
+		 * 
+		 * @param array $actions Existing actions
+		 * @return array Modified actions
 		 */
-		function add_order_meta_box_actions( $actions ) {
-			$actions['cebelcabiz_create_invoice']    = __( $this->conf['app_name'] . ': Make invoice', 'woocom-invfox' );
-			$actions['cebelcabiz_mark_invoice_paid'] = __( $this->conf['app_name'] . ': Mark invoice paid', 'woocom-invfox' );
-			$actions['cebelcabiz_create_proforma']   = __( $this->conf['app_name'] . ': Make proforma', 'woocom-invfox' );
-			$actions['cebelcabiz_create_advance']    = __( $this->conf['app_name'] . ': Make advance', 'woocom-invfox' );
-
-			//if ( $this->conf['use_inventory'] == "yes" ) {
-            $actions['cebelcabiz_check_invt_items'] = __( $this->conf['app_name'] . ': Check inventory', 'woocom-invfox' );
-            $actions['cebelcabiz_create_invt_sale'] = __( $this->conf['app_name'] . ': Make invent. sale', 'woocom-invfox' );
-                //}
+		public function add_order_meta_box_actions($actions) {
+			$app_name = esc_html($this->conf['app_name']);
+			
+			$actions['cebelcabiz_create_invoice'] = sprintf(__('%s: Make invoice', 'woocom-invfox'), $app_name);
+			$actions['cebelcabiz_mark_invoice_paid'] = sprintf(__('%s: Mark invoice paid', 'woocom-invfox'), $app_name);
+			$actions['cebelcabiz_create_proforma'] = sprintf(__('%s: Make proforma', 'woocom-invfox'), $app_name);
+			$actions['cebelcabiz_create_advance'] = sprintf(__('%s: Make advance', 'woocom-invfox'), $app_name);
+			$actions['cebelcabiz_check_invt_items'] = sprintf(__('%s: Check inventory', 'woocom-invfox'), $app_name);
+			$actions['cebelcabiz_create_invt_sale'] = sprintf(__('%s: Make invent. sale', 'woocom-invfox'), $app_name);
 
 			return $actions;
 		}
 
 		/**
 		 * Add a new integration to WooCommerce.
+		 * 
+		 * @param array $integrations Existing integrations
+		 * @return array Modified integrations
 		 */
-		public function add_integration( $integrations ) {
+		public function add_integration($integrations) {
 			$integrations[] = 'WC_Integration_Cebelcabiz';
-
 			return $integrations;
 		}
 
-		function process_custom_order_action_invoice( $order ) {
-			$this->_make_document_in_invoicefox( $order, "invoice_draft" );
+		/**
+		 * Process custom order action to create invoice draft
+		 * 
+		 * @param WC_Order $order Order object
+		 */
+		public function process_custom_order_action_invoice($order) {
+			try {
+				$this->_make_document_in_invoicefox($order, "invoice_draft");
+			} catch (Exception $e) {
+				$this->add_admin_notice("NAPAKA: " . $e->getMessage());
+				woocomm_invfox__trace($e->getMessage(), "Error in process_custom_order_action_invoice");
+			}
 		}
 
-		function process_custom_order_action_proforma( $order ) {
-			$this->_make_document_in_invoicefox( $order, "proforma" );
+		/**
+		 * Process custom order action to create proforma
+		 * 
+		 * @param WC_Order $order Order object
+		 */
+		public function process_custom_order_action_proforma($order) {
+			try {
+				$this->_make_document_in_invoicefox($order, "proforma");
+			} catch (Exception $e) {
+				$this->add_admin_notice("NAPAKA: " . $e->getMessage());
+				woocomm_invfox__trace($e->getMessage(), "Error in process_custom_order_action_proforma");
+			}
 		}
 		
-		function process_custom_order_action_advance( $order ) {
-			$this->_make_document_in_invoicefox( $order, "advance_draft" );
+		/**
+		 * Process custom order action to create advance draft
+		 * 
+		 * @param WC_Order $order Order object
+		 */
+		public function process_custom_order_action_advance($order) {
+			try {
+				$this->_make_document_in_invoicefox($order, "advance_draft");
+			} catch (Exception $e) {
+				$this->add_admin_notice("NAPAKA: " . $e->getMessage());
+				woocomm_invfox__trace($e->getMessage(), "Error in process_custom_order_action_advance");
+			}
 		}
 
-		function process_custom_order_action_invt_sale( $order ) {
-			$this->_make_document_in_invoicefox( $order, "inventory" );
+		/**
+		 * Process custom order action to create inventory sale
+		 * 
+		 * @param WC_Order $order Order object
+		 */
+		public function process_custom_order_action_invt_sale($order) {
+			try {
+				$this->_make_document_in_invoicefox($order, "inventory");
+			} catch (Exception $e) {
+				$this->add_admin_notice("NAPAKA: " . $e->getMessage());
+				woocomm_invfox__trace($e->getMessage(), "Error in process_custom_order_action_invt_sale");
+			}
 		}
 
-		function process_custom_order_action_full_invoice( $order ) {
-			$this->_make_document_in_invoicefox( $order, "invoice_complete" );
+		/**
+		 * Process custom order action to create complete invoice
+		 * 
+		 * @param WC_Order $order Order object
+		 */
+		public function process_custom_order_action_full_invoice($order) {
+			try {
+				$this->_make_document_in_invoicefox($order, "invoice_complete");
+			} catch (Exception $e) {
+				$this->add_admin_notice("NAPAKA: " . $e->getMessage());
+				woocomm_invfox__trace($e->getMessage(), "Error in process_custom_order_action_full_invoice");
+			}
 		}
 
-		function process_invoice_download( $order ) {
-			$this->_woocommerce_order_invoice_pdf( $order, "invoice-sent" );
+		/**
+		 * Process invoice download
+		 * 
+		 * @param WC_Order $order Order object
+		 * @return string|bool Path to downloaded file or false on failure
+		 */
+		public function process_invoice_download($order) {
+			try {
+				return $this->_woocommerce_order_invoice_pdf($order, "invoice-sent");
+			} catch (Exception $e) {
+				$this->add_admin_notice("NAPAKA: " . $e->getMessage());
+				woocomm_invfox__trace($e->getMessage(), "Error in process_invoice_download");
+				return false;
+			}
 		}
 
-		function process_custom_order_action_mark_invoice_paid( $order ) {
-			$api = new InvfoxAPI( $this->conf['api_key'], $this->conf['api_domain'], false );
-			$api->setDebugHook( "woocomm_invfox__trace" );
-            $currentPM = $order->get_payment_method_title();
-            woocomm_invfox__trace( "================ MARKING PAID ===============" );
-            woocomm_invfox__trace( $currentPM );
-            woocomm_invfox__trace( $this->conf['payment_methods_map'] );
-            $payment_method = mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
-            woocomm_invfox__trace( $payment_method );
+		/**
+		 * Process custom order action to mark invoice as paid
+		 * 
+		 * @param WC_Order $order Order object
+		 */
+		public function process_custom_order_action_mark_invoice_paid($order) {
+			try {
+				if (empty($this->conf['api_key'])) {
+					throw new Exception("API key is not configured");
+				}
+				
+				$api = new InvfoxAPI($this->conf['api_key'], $this->conf['api_domain'], false);
+				$api->setDebugHook("woocomm_invfox__trace");
+				
+				$currentPM = $order->get_payment_method_title();
+				woocomm_invfox__trace("================ MARKING PAID ===============");
+				woocomm_invfox__trace($currentPM);
+				woocomm_invfox__trace($this->conf['payment_methods_map']);
+				
+				$payment_method = $this->mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+				woocomm_invfox__trace($payment_method);
 
-            $notices   = get_option( 'cebelcabiz_deferred_admin_notices', array() );
-            if($payment_method == -2) {
-                $notices[] = "NAPAKA: Način plačila $currentPM manjka v nastavitvah pretvorbe.";
-                $payment_method = "-";
-            }
-            else if($payment_method == -1) {
-                $notices[] = "NAPAKA: Napačna oblika nastavitve: Pretvorba načinov plačila.";
-                $payment_method = "-";
-            }
-            woocomm_invfox__trace( "CALLING API" );
-            $res = $api->markInvoicePaid( $order->get_id(), $payment_method );
-            woocomm_invfox__trace( $res );
-            // TODO -- poglej kaj je vrnila Čebelca in zapiši v notices
-            $notices[] = "Plačilo zabeleženo";
-
-			update_option( 'cebelcabiz_deferred_admin_notices', $notices );
+				if ($payment_method == -2) {
+					throw new Exception("Način plačila $currentPM manjka v nastavitvah pretvorbe.");
+				} else if ($payment_method == -1) {
+					throw new Exception("Napačna oblika nastavitve: Pretvorba načinov plačila.");
+				}
+				
+				woocomm_invfox__trace("CALLING API");
+				$res = $api->markInvoicePaid($order->get_id(), $payment_method);
+				woocomm_invfox__trace($res);
+				
+				$this->add_admin_notice("Plačilo zabeleženo");
+				
+			} catch (Exception $e) {
+				$this->add_admin_notice("NAPAKA: " . $e->getMessage());
+				woocomm_invfox__trace($e->getMessage(), "Error in process_custom_order_action_mark_invoice_paid");
+			}
 		}
 
 		function process_custom_order_action_check_invt_items( $order ) {
@@ -887,106 +1041,206 @@ function woocomm_invfox_get_order_item_variations( $item ) {
     return $res;
 }
 
+/**
+ * Parse VAT levels from a comma-separated string
+ * 
+ * @param string $string Comma-separated VAT levels
+ * @return array Array of VAT levels as floats
+ */
 function parseVatLevels($string) {
-    // Split the string into an array of strings using str_getcsv()
-    $array = str_getcsv($string);
-    
-    // Convert each string to a double using the floatval() function
-    $doubles = array_map('floatval', $array);
-
-    // Return the resulting array of doubles
-    return $doubles;
-}
-
-
-function mapPaymentMethods($key, $methodsMap){
-
-    $mmap = str_replace("&gt;", ">", $methodsMap);
-
-    woocomm_invfox__trace( $mmap );
-    
-    // Check if the string is in the correct format using a regular expression
-    if (!preg_match('/([a-zA-Z0-9čČšŠžŽ\/_\-\(\)\* ]+->[a-zA-Z0-9čČšŠžŽ_\- ]+)+/', $mmap)) {
-        return -1; // Return -1 if the format is incorrect
-    }
-
-    // Split the string into pairs
-    $pairs = explode(';', $mmap);
-
-    // Iterate through each pair
-    foreach ($pairs as $pair) {
-        if (empty($pair)) {
-            continue; // Skip empty pairs (e.g., the last one after the final semicolon)
-        }
-
-        // Split the pair into key and value
-        list($pairKey, $value) = explode('->', $pair);
-
-        // Check if the current key matches the requested key
-        if (trim($pairKey) == $key) {
-            return $value; // Return the value if a match is found
-        }
-	if (strpos("*", $pairKey) !== false) { // anywhere in the string for now 
-	        if (strpos($key, $pairKey) !== false) {
-	            return $value; // Return the value if a partial match is found
-	        }
-	}
-	    
-    }
-
-    // Return -2 if no matching key is found
-    return -2;
-
-}
-
-function isPaymentAmongst($po, $options){ 
-    // check if there is a * , if it is, answer true for any payment method
-    if (strpos($options, "*") !== false) {
-        return true;    
+    if (empty($string)) {
+        // Default VAT levels if none provided
+        return array(0, 5, 9.5, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27);
     }
     
-    // convert both strings to lowercase for case-insensitive search
-    $po = strtolower($po);
-    $options = strtolower($options);
-
-    // return true if $po is found within $options, otherwise return false
-    return strpos($options, $po) !== false;
-}
-
-function calculatePreciseSloVAT($netPrice, $vatValue, $vatLevels) {
-    if ($netPrice == 0) {
-        return 0;
-    }
-
-    $calculatedVat = round($vatValue / $netPrice * 100, 1);
-    $closestVat = 0;
-    $minDiff = 1000;
-
-    foreach ($vatLevels as $vatLevel) {
-        $diff = abs($calculatedVat - $vatLevel);
-        if ($diff < $minDiff) {
-            $minDiff = $diff;
-            $closestVat = $vatLevel;
-        }
-    }
-    return $closestVat;
-}
-
-function calculatePreciseSloVAT_OLD($netPrice, $vatValue, $vatLevels) {
-	// because of new EU rules all EU VAT levels are valid here
-	// $vatLevels = array();
-    if ($netPrice != 0) {
-        $vat1 = round( $vatValue / $netPrice * 100, 1);
-        $vat = -1;
-        foreach ($vatLevels as $vatLevel) {
-            if (abs($vat1 - $vatLevel) < 1.5) {
-                $vat = $vatLevel;
+    try {
+        // Split the string into an array of strings using str_getcsv()
+        $array = str_getcsv($string);
+        
+        // Convert each string to a float and filter out invalid values
+        $doubles = array();
+        foreach ($array as $value) {
+            $float = floatval(trim($value));
+            if ($float >= 0) { // Only accept non-negative values
+                $doubles[] = $float;
             }
         }
-	} else {
-        $vat = 0;
+        
+        // If no valid values were found, return default values
+        if (empty($doubles)) {
+            return array(0, 5, 9.5, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27);
+        }
+        
+        // Return the resulting array of doubles
+        return $doubles;
+    } catch (Exception $e) {
+        woocomm_invfox__trace("Error parsing VAT levels: " . $e->getMessage(), "ERROR");
+        // Return default values in case of error
+        return array(0, 5, 9.5, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27);
     }
-	return $vat;
+}
+
+/**
+ * Map payment methods from WooCommerce to Cebelca BIZ
+ * 
+ * @param string $key WooCommerce payment method
+ * @param string $methodsMap Payment methods mapping string
+ * @return string|int Cebelca BIZ payment method or error code
+ */
+function mapPaymentMethods($key, $methodsMap) {
+    try {
+        if (empty($key) || empty($methodsMap)) {
+            woocomm_invfox__trace("Empty payment method or mapping", "WARNING");
+            return -2; // Missing data
+        }
+        
+        $mmap = str_replace("&gt;", ">", $methodsMap);
+        
+        woocomm_invfox__trace($mmap, "Payment methods map");
+        
+        // Check if the string is in the correct format using a regular expression
+        if (!preg_match('/([a-zA-Z0-9čČšŠžŽ\/_\-\(\)\* ]+->[a-zA-Z0-9čČšŠžŽ_\- ]+)+/', $mmap)) {
+            woocomm_invfox__trace("Invalid payment methods map format", "ERROR");
+            return -1; // Invalid format
+        }
+        
+        // Split the string into pairs
+        $pairs = explode(';', $mmap);
+        
+        // Iterate through each pair
+        foreach ($pairs as $pair) {
+            if (empty($pair)) {
+                continue; // Skip empty pairs
+            }
+            
+            // Check if the pair contains the delimiter
+            if (strpos($pair, '->') === false) {
+                continue; // Skip invalid pairs
+            }
+            
+            // Split the pair into key and value
+            list($pairKey, $value) = explode('->', $pair);
+            
+            $pairKey = trim($pairKey);
+            $value = trim($value);
+            
+            // Check for exact match
+            if ($pairKey === $key) {
+                return $value;
+            }
+            
+            // Check for wildcard match
+            if (strpos($pairKey, "*") !== false) {
+                $pattern = str_replace("*", ".*", preg_quote($pairKey, '/'));
+                if (preg_match('/^' . $pattern . '$/i', $key)) {
+                    return $value;
+                }
+            }
+        }
+        
+        // Return -2 if no matching key is found
+        woocomm_invfox__trace("No matching payment method found for: $key", "WARNING");
+        return -2;
+    } catch (Exception $e) {
+        woocomm_invfox__trace("Error mapping payment methods: " . $e->getMessage(), "ERROR");
+        return -1;
+    }
+}
+
+/**
+ * Check if a payment method is amongst the fiscalized payment methods
+ * 
+ * @param string $po Payment method
+ * @param string $options Fiscalized payment methods
+ * @return bool True if payment method should be fiscalized
+ */
+function isPaymentAmongst($po, $options) {
+    try {
+        if (empty($options)) {
+            return false;
+        }
+        
+        // Check if there is a * , if it is, answer true for any payment method
+        if (strpos($options, "*") !== false) {
+            return true;
+        }
+        
+        if (empty($po)) {
+            return false;
+        }
+        
+        // Convert both strings to lowercase for case-insensitive search
+        $po = strtolower(trim($po));
+        $options = strtolower(trim($options));
+        
+        // Split options by comma and check each one
+        $optionsArray = explode(',', $options);
+        foreach ($optionsArray as $option) {
+            $option = trim($option);
+            if (empty($option)) {
+                continue;
+            }
+            
+            // Check for exact match or substring match
+            if ($option === $po || strpos($po, $option) !== false) {
+                return true;
+            }
+        }
+        
+        // Return false if no match found
+        return false;
+    } catch (Exception $e) {
+        woocomm_invfox__trace("Error checking payment method: " . $e->getMessage(), "ERROR");
+        return false;
+    }
+}
+
+/**
+ * Calculate the precise Slovenian VAT rate based on net price and VAT value
+ * 
+ * @param float $netPrice Net price
+ * @param float $vatValue VAT value
+ * @param array $vatLevels Available VAT levels
+ * @return float Closest matching VAT level
+ */
+function calculatePreciseSloVAT($netPrice, $vatValue, $vatLevels) {
+    try {
+        // Handle zero net price
+        if (empty($netPrice) || $netPrice == 0) {
+            return 0;
+        }
+        
+        // Handle zero VAT value
+        if (empty($vatValue) || $vatValue == 0) {
+            return 0;
+        }
+        
+        // Calculate VAT percentage
+        $calculatedVat = round($vatValue / $netPrice * 100, 2);
+        
+        // Find closest VAT level
+        $closestVat = 0;
+        $minDiff = PHP_FLOAT_MAX;
+        
+        foreach ($vatLevels as $vatLevel) {
+            $diff = abs($calculatedVat - $vatLevel);
+            if ($diff < $minDiff) {
+                $minDiff = $diff;
+                $closestVat = $vatLevel;
+            }
+        }
+        
+        // If the difference is too large, return -1 to indicate an error
+        if ($minDiff > 2.0) {
+            woocomm_invfox__trace("Calculated VAT ($calculatedVat%) is too far from any known VAT level", "WARNING");
+            return -1;
+        }
+        
+        return $closestVat;
+    } catch (Exception $e) {
+        woocomm_invfox__trace("Error calculating VAT: " . $e->getMessage(), "ERROR");
+        return -1;
+    }
 }
 
 
