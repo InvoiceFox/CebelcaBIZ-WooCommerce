@@ -64,10 +64,12 @@ class StrpcAPI {
    * Default trace function
    * 
    * @param mixed $x Data to trace
+   * @param string $context Optional context label
    */
-  public static function trace($x) { 
+  public static function trace($x, $context = "StrpcAPI") { 
     if (defined('WOOCOMM_INVFOX_DEBUG') && WOOCOMM_INVFOX_DEBUG) {
-      error_log(print_r($x, true)); 
+      $formatted_x = is_string($x) ? $x : print_r($x, true);
+      error_log("[{$context}] {$formatted_x}"); 
     }
   }
 
@@ -149,7 +151,7 @@ class StrpcAPI {
           'User-Agent: PHP-strpc-client',
           'Authorization: Basic ' . base64_encode($this->apitoken . ':x')
         ), true) . "\nData: $data";
-        call_user_func($this->debugHook, $debugData);
+        call_user_func($this->debugHook, $debugData, "API Request");
       }
       
       $result = curl_exec($ch);
@@ -161,12 +163,16 @@ class StrpcAPI {
         $retries++;
         
         if ($this->debugMode) {
-          call_user_func($this->debugHook, "API call failed (attempt $retries): $lastError");
+          call_user_func($this->debugHook, "API call failed (attempt $retries): $lastError", "API Error");
         }
         
         if ($retries <= $this->maxRetries) {
           // Wait before retrying (exponential backoff)
-          sleep(pow(2, $retries - 1));
+          $waitTime = pow(2, $retries - 1);
+          if ($this->debugMode) {
+            call_user_func($this->debugHook, "Waiting {$waitTime}s before retry", "API Retry");
+          }
+          sleep($waitTime);
           continue;
         }
         
@@ -176,14 +182,23 @@ class StrpcAPI {
       curl_close($ch);
       
       if ($this->debugMode) {
-        call_user_func($this->debugHook, "API response (HTTP $httpCode): " . print_r($result, true));
+        // Truncate very long responses for readability
+        $resultForLog = $result;
+        if (strlen($resultForLog) > 1000) {
+          $resultForLog = substr($resultForLog, 0, 1000) . "... [truncated, total length: " . strlen($result) . "]";
+        }
+        call_user_func($this->debugHook, "API response (HTTP $httpCode): " . print_r($resultForLog, true), "API Response");
       }
       
       // Check for HTTP errors
       if ($httpCode >= 400) {
         if ($retries < $this->maxRetries) {
           $retries++;
-          sleep(pow(2, $retries - 1));
+          $waitTime = pow(2, $retries - 1);
+          if ($this->debugMode) {
+            call_user_func($this->debugHook, "HTTP error $httpCode, waiting {$waitTime}s before retry", "API HTTP Error");
+          }
+          sleep($waitTime);
           continue;
         }
         
@@ -200,7 +215,11 @@ class StrpcAPI {
         if (json_last_error() !== JSON_ERROR_NONE) {
           if ($retries < $this->maxRetries) {
             $retries++;
-            sleep(pow(2, $retries - 1));
+            $waitTime = pow(2, $retries - 1);
+            if ($this->debugMode) {
+              call_user_func($this->debugHook, "JSON parse error: " . json_last_error_msg() . ", waiting {$waitTime}s before retry", "API JSON Error");
+            }
+            sleep($waitTime);
             continue;
           }
           
@@ -265,7 +284,7 @@ class StrpcAPI {
       }
       
       if ($this->debugMode) {
-        call_user_func($this->debugHook, "API request: " . print_r($header . $data, true));
+        call_user_func($this->debugHook, "API request: " . print_r($header . $data, true), "API Request (fsockopen)");
       }
       
       // Set socket timeout
@@ -297,7 +316,12 @@ class StrpcAPI {
       fclose($fp);
       
       if ($this->debugMode) {
-        call_user_func($this->debugHook, "API response: " . print_r($result, true));
+        // Truncate very long responses for readability
+        $resultForLog = $result;
+        if (strlen($resultForLog) > 1000) {
+          $resultForLog = substr($resultForLog, 0, 1000) . "... [truncated, total length: " . strlen($result) . "]";
+        }
+        call_user_func($this->debugHook, "API response: " . print_r($resultForLog, true), "API Response (fsockopen)");
       }
       
       // Extract the response body

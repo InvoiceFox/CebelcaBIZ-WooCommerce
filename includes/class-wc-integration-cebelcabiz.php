@@ -38,7 +38,7 @@ if ( ! class_exists( 'WC_Integration_Cebelcabiz' ) && class_exists( 'WC_Integrat
       $this->round_calculated_netprice_to = $this->get_option( 'round_calculated_netprice_to', 4 );
       $this->round_calculated_shipping_taxrate_to = $this->get_option( 'round_calculated_shipping_taxrate_to', 0); //*
       $this->from_warehouse_id = $this->get_option( 'from_warehouse_id', 0 );
-      $this->debug            = $this->get_option( 'debug' );
+      $this->debug_mode       = $this->get_option( 'debug_mode', 'yes' );
       // new options below -- TODO ... can we group them together in interface to make it more clear?
       $this->order_actions_enabled = $this->get_option( 'order_actions_enabled' );
       $this->on_order_on_hold = $this->get_option( 'on_order_on_hold' );
@@ -142,6 +142,15 @@ if ( ! class_exists( 'WC_Integration_Cebelcabiz' ) && class_exists( 'WC_Integrat
               'type' => 'title',
               'description' => __( 'Naslednje nastavitve lahko v večini primerov oz. vsaj na začetku pustite kot so. Po potrebi pa jih seveda lahko spremenite.', 'woocommerce-integration-demo' ),
           ),
+          
+          'debug_mode' => 
+	      array(
+		    'title'             => __( 'Beleženje dogodkov (debug)', 'woocommerce-integration-demo' ),
+		    'type'              => 'checkbox',
+		    'label'             => __( 'Aktiviraj beleženje dogodkov', 'woocommerce-integration-demo' ),
+		    'description'       => __( 'Aktivira beleženje dogodkov v dnevnik za lažje odkrivanje napak. Dnevnik se nahaja v: ' . WP_CONTENT_DIR . '/cebelcabiz-debug.log', 'woocommerce-integration-demo' ),
+		    'default'           => 'yes',
+		    ),
           
           
           'add_post_content_in_item_descr' => 
