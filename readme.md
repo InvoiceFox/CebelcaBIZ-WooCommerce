@@ -1,3 +1,7 @@
+> POZOR: plugin je dobil večjo nadgradnjo. Če slučajno še potrebujete staro verzijo pred v0.8, potem jo najdete na branchu: master_pred_v0.8 
+> https://github.com/InvoiceFox/CebelcaBIZ-WooCommerce/tree/master_pred_v0.8
+> do spremembe je prišlo: 3.4.2025
+
 # Čebelca BIZ dodatek za WooCommerce
 
 Čebelca BIZ WooCommerce dodatek je WordPress "vtičnik" za e-trgovino, ki omogoča avtomatsko dodajanje kupcev, ustvarjanje računov, dodajanje plačil in kreiranje dobavnic glede na status naročil v spletni trgovini.
