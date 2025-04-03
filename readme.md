@@ -95,6 +95,10 @@ Za lažje odkrivanje napak lahko aktivirate beleženje dogodkov:
 2. Dnevnik se nahaja v: `wp-content/cebelcabiz-debug.log`.
 3. Dnevnik lahko pregledate, počistite ali prenesete v razdelku **Debug Log** na dnu strani z nastavitvami.
 
+### Beleženje e-pošte
+
+Če imate težave s pošiljanjem e-pošte s priponkami računov ali predračunov, namestite dodatek **cebelcabiz-email-logging**. Ta dodatek omogoča beleženje vseh e-poštnih sporočil, ki jih pošilja WooCommerce, kar vam pomaga pri odkrivanju in odpravljanju težav s pošiljanjem e-pošte.
+
 ## Navodila za razvijalce
 
 ### Struktura projekta
@@ -131,6 +135,8 @@ Za pakiranje vtičnika v ZIP datoteko uporabite priloženo skripto `package-plug
 3. Pošljite pull request z opisom sprememb.
 
 ## Dnevnik sprememb
+
+**03.04.2025** Velika nadgradnja, boljše preverjanje težav, dnevnik dogodkov za reševanje težav z delovanjem, izboljšana dokumentacija in navodila za uporabo.
 
 **28.04.2024** V nastavitve se lahko vnese načine plačila na Woocommerce in njihove ekvivalente na Čebelca.biz in plugin bo dodal pravi način plačila. Če se DDV ne uspe preračunati (primerne stopnje ni v nastavitvah) se račun ne bo izdal oz. davčno potrdil preko API-ja
 
