@@ -99,9 +99,9 @@ Za lažje odkrivanje napak lahko aktivirate beleženje dogodkov:
 2. Dnevnik se nahaja v: `wp-content/cebelcabiz-debug.log`.
 3. Dnevnik lahko pregledate, počistite ali prenesete v razdelku **Debug Log** na dnu strani z nastavitvami.
 
-### Beleženje e-pošte
+### Reševanje težav z e-pošto ali priponkami
 
-Če imate težave s pošiljanjem e-pošte s priponkami računov ali predračunov, namestite dodatek **cebelcabiz-email-logging**. Ta dodatek omogoča beleženje vseh e-poštnih sporočil, ki jih pošilja WooCommerce, kar vam pomaga pri odkrivanju in odpravljanju težav s pošiljanjem e-pošte.
+Če imate težave s pošiljanjem e-pošte s priponkami računov ali predračunov, namestite dodatek [cebelcabiz-email-logger](https://github.com/InvoiceFox/cebelcabiz-email-logger). Ta dodatek omogoča beleženje vseh e-poštnih sporočil, ki jih pošilja WooCommerce, kar vam pomaga pri odkrivanju in odpravljanju težav s pošiljanjem e-pošte.
 
 ## Navodila za razvijalce
 
