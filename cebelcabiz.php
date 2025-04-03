@@ -3,7 +3,7 @@
  * Plugin Name: Cebelca BIZ
  * Plugin URI:
  * Description: Connects WooCommerce to Cebelca.biz for invoicing and optionally inventory
- * Version: 0.0.112
+ * Version: 0.01.0
  * Author: JankoM
  * Author URI: http://refaktorlabs.com
  * Developer: Janko M.
@@ -19,7 +19,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 
     // Constants for plugin configuration
     define("WOOCOMM_INVFOX_LOG_FILE", WP_CONTENT_DIR . '/cebelcabiz-debug.log');
-    define("WOOCOMM_INVFOX_VERSION", '0.0.112');
+    define("WOOCOMM_INVFOX_VERSION", '0.01.0');
     
     // Debug mode will be set based on settings
     $debug_enabled = false;
@@ -61,6 +61,10 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
     // Load required libraries
     require_once( plugin_dir_path( __FILE__ ) . 'lib/invfoxapi.php' );
     require_once( plugin_dir_path( __FILE__ ) . 'lib/strpcapi.php' );
+    require_once( plugin_dir_path( __FILE__ ) . 'includes/class-wc-cebelcabiz-log-viewer.php' );
+    
+    // Initialize log viewer
+    $log_viewer = new WC_Cebelcabiz_Log_Viewer();
                                            
     $conf = null; // Will be initialized in the constructor
     
@@ -134,6 +138,9 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 
 			// Admin notices
 			add_action('admin_notices', array($this, 'admin_notices'));
+            
+            // Enqueue admin scripts and styles for tabs
+            add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
 
 			// Order actions
 			if (!empty($this->conf) && !empty($this->conf['order_actions_enabled'])) {
@@ -141,6 +148,14 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 			}
 		}
 
+        /**
+         * Enqueue admin scripts and styles
+         */
+        public function enqueue_admin_scripts() {
+            // This method is kept for future use if needed
+            // Currently not enqueueing any scripts or styles
+        }
+        
 		/**
 		 * Initialize order action hooks
 		 */
@@ -460,9 +475,9 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 				woocomm_invfox__trace("Mapped payment method: " . $payment_method, "Payment");
 
 				if ($payment_method == -2) {
-					throw new Exception("Način plačila $currentPM manjka v nastavitvah pretvorbe.");
+					throw new Exception("Način plačila \"$currentPM\" manjka v nastavitvah pretvorbe. Plačilo v Čebelci ni bilo zabeleženo.");
 				} else if ($payment_method == -1) {
-					throw new Exception("Napačna oblika nastavitve: Pretvorba načinov plačila.");
+					throw new Exception("Napačna oblika nastavitve: Pretvorba načinov plačila. Plačilo v Čebelci ni bilo zabeleženo.");
 				}
 				
 				woocomm_invfox__trace("Marking invoice as paid for order #" . $order->get_id(), "Payment");
@@ -877,8 +892,10 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 						woocomm_invfox__trace("Mapped payment method: " . $payment_method, "Payment");
 						
 						$notices   = get_option( 'cebelcabiz_deferred_admin_notices', array() );
+						$payment_recorded = false;
+						
 						if($payment_method == -2) {
-							$notices[] = "NAPAKA: Način plačila $currentPM manjka v nastavitvah pretvorbe. Plačilo v Čebelci ni bilo zabeleženo.";
+							$notices[] = "NAPAKA: Način plačila \"$currentPM\" manjka v nastavitvah pretvorbe. Plačilo v Čebelci ni bilo zabeleženo.";
 							$payment_method = "-";
 						}
 						else if($payment_method == -1) {
@@ -893,6 +910,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 							// Check if the API call was successful
 							if ($res && (!is_object($res) || !method_exists($res, 'isOk') || $res->isOk())) {
 								$notices[] = "Plačilo zabeleženo";
+								$payment_recorded = true;
 							} else {
 								$notices[] = "NAPAKA: Plačila ni bilo mogoče zabeležiti. Preverite povezavo s strežnikom Čebelca BIZ.";
 							}
@@ -1554,5 +1572,3 @@ function update_product_quantity($sku_quantity_array) {
         }
     }
 }
-
-?>
