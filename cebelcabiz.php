@@ -3,7 +3,7 @@
  * Plugin Name: Cebelca BIZ
  * Plugin URI:
  * Description: Connects WooCommerce to Cebelca.biz for invoicing and optionally inventory
- * Version: 0.01.0
+ * Version: 0.8.0
  * Author: JankoM
  * Author URI: http://refaktorlabs.com
  * Developer: Janko M.
@@ -19,7 +19,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 
     // Constants for plugin configuration
     define("WOOCOMM_INVFOX_LOG_FILE", WP_CONTENT_DIR . '/cebelcabiz-debug.log');
-    define("WOOCOMM_INVFOX_VERSION", '0.01.0');
+    define("WOOCOMM_INVFOX_VERSION", '0.8.0');
     
     // Debug mode will be set based on settings
     $debug_enabled = false;
