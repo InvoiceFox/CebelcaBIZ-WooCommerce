@@ -489,8 +489,14 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 			$api = new InvfoxAPI( $this->conf['api_key'], $this->conf['api_domain'], true );
 //			$api->setDebugHook( "woocomm_invfox__trace" );
 
-			$vatNum = get_post_meta( $order->get_id(), 'VAT Number', true );
+			// Try WooCommerce order meta first (modern method, compatible with HPOS)
+			$vatNum = $order->get_meta( 'vat_number' );
+			if (!$vatNum) { $vatNum = $order->get_meta( 'VAT Number' ); }
+			if (!$vatNum) { $vatNum = $order->get_meta( '_vat_number' ); }
+			
+			// Fallback to WordPress post meta (legacy method for backward compatibility)
 			if (!$vatNum) { $vatNum = get_post_meta( $order->get_id(), 'vat_number', true ); }
+			if (!$vatNum) { $vatNum = get_post_meta( $order->get_id(), 'VAT Number', true ); }
 			if (!$vatNum) { $vatNum = get_post_meta( $order->get_id(), '_vat_number', true ); }
 
 			$r = $api->assurePartner( array(
