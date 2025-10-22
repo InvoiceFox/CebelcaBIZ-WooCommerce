@@ -32,7 +32,7 @@ function generateRandomString($length = 12) {
  */
 function readHeader($ch, $header) {
     if (defined('WOOCOMM_INVFOX_DEBUG') && WOOCOMM_INVFOX_DEBUG) {
-        woocomm_invfox__trace($header, "READ HEADERS");
+        woocomm_invfox__trace($header, "API Response Header");
     }
     
     global $responseHeaders;
@@ -88,9 +88,12 @@ class InvfoxAPI {
    * @throws Exception If API call fails
    */
   public function assurePartner($data) {
+    woocomm_invfox__trace("Ensuring partner exists: " . (isset($data['name']) ? $data['name'] : 'Unknown'), "Partner");
     $res = $this->api->call('partner', 'assure', $data);
     if ($res->isErr()) {
-      woocomm_invfox__trace("Failed to assure partner: " . print_r($res->getErr(), true), "ERROR");
+      woocomm_invfox__trace("Failed to assure partner: " . print_r($res->getErr(), true), "Partner Error");
+    } else {
+      woocomm_invfox__trace("Partner assured successfully", "Partner");
     }
     return $res;
   }
@@ -104,23 +107,30 @@ class InvfoxAPI {
    * @throws Exception If API call fails
    */
   public function createInvoice($header, $body) {
+    woocomm_invfox__trace("Creating invoice with " . count($body) . " line items", "Invoice");
     $res = $this->api->call('invoice-sent', 'insert-smart-2', $header);
     if ($res->isErr()) {
-      woocomm_invfox__trace("Failed to create invoice: " . print_r($res->getErr(), true), "ERROR");
+      woocomm_invfox__trace("Failed to create invoice: " . print_r($res->getErr(), true), "Invoice Error");
     } else {
       $resD = $res->getData();
       if (!empty($resD[0]['id'])) {
         $invoiceId = $resD[0]['id'];
+        woocomm_invfox__trace("Invoice created with ID: " . $invoiceId, "Invoice");
         
-        foreach ($body as $bl) {
+        $lineItemsAdded = 0;
+        foreach ($body as $index => $bl) {
           $bl['id_invoice_sent'] = $invoiceId;
+          woocomm_invfox__trace("Adding line item " . ($index + 1) . ": " . (isset($bl['title']) ? substr($bl['title'], 0, 30) . "..." : 'Unknown'), "Invoice Line");
           $res2 = $this->api->call('invoice-sent-b', 'insert-into', $bl);
           if ($res2->isErr()) {
-            woocomm_invfox__trace("Failed to add line item to invoice: " . print_r($res2->getErr(), true), "ERROR");
+            woocomm_invfox__trace("Failed to add line item to invoice: " . print_r($res2->getErr(), true), "Invoice Line Error");
+          } else {
+            $lineItemsAdded++;
           }
         }
+        woocomm_invfox__trace("Added " . $lineItemsAdded . " line items to invoice", "Invoice");
       } else {
-        woocomm_invfox__trace("Invalid response from API: missing invoice ID", "ERROR");
+        woocomm_invfox__trace("Invalid response from API: missing invoice ID", "Invoice Error");
       }
     }
     return $res;
@@ -135,23 +145,30 @@ class InvfoxAPI {
    * @throws Exception If API call fails
    */
   public function createProFormaInvoice($header, $body) {
+    woocomm_invfox__trace("Creating proforma invoice with " . count($body) . " line items", "Proforma");
     $res = $this->api->call('preinvoice', 'insert-smart', $header);
     if ($res->isErr()) {
-      woocomm_invfox__trace("Failed to create proforma invoice: " . print_r($res->getErr(), true), "ERROR");
+      woocomm_invfox__trace("Failed to create proforma invoice: " . print_r($res->getErr(), true), "Proforma Error");
     } else {
       $resD = $res->getData();
       if (!empty($resD[0]['id'])) {
         $invoiceId = $resD[0]['id'];
+        woocomm_invfox__trace("Proforma invoice created with ID: " . $invoiceId, "Proforma");
         
-        foreach ($body as $bl) {
+        $lineItemsAdded = 0;
+        foreach ($body as $index => $bl) {
           $bl['id_preinvoice'] = $invoiceId;
+          woocomm_invfox__trace("Adding line item " . ($index + 1) . ": " . (isset($bl['title']) ? substr($bl['title'], 0, 30) . "..." : 'Unknown'), "Proforma Line");
           $res2 = $this->api->call('preinvoice-b', 'insert-into', $bl);
           if ($res2->isErr()) {
-            woocomm_invfox__trace("Failed to add line item to proforma invoice: " . print_r($res2->getErr(), true), "ERROR");
+            woocomm_invfox__trace("Failed to add line item to proforma invoice: " . print_r($res2->getErr(), true), "Proforma Line Error");
+          } else {
+            $lineItemsAdded++;
           }
         }
+        woocomm_invfox__trace("Added " . $lineItemsAdded . " line items to proforma invoice", "Proforma");
       } else {
-        woocomm_invfox__trace("Invalid response from API: missing proforma invoice ID", "ERROR");
+        woocomm_invfox__trace("Invalid response from API: missing proforma invoice ID", "Proforma Error");
       }
     }
     return $res;
@@ -166,23 +183,30 @@ class InvfoxAPI {
    * @throws Exception If API call fails
    */
   public function createInventorySale($header, $body) {
+    woocomm_invfox__trace("Creating inventory sale with " . count($body) . " line items", "Inventory");
     $res = $this->api->call('transfer', 'insert-smart', $header);
     if ($res->isErr()) {
-      woocomm_invfox__trace("Failed to create inventory sale: " . print_r($res->getErr(), true), "ERROR");
+      woocomm_invfox__trace("Failed to create inventory sale: " . print_r($res->getErr(), true), "Inventory Error");
     } else {
       $resD = $res->getData();
       if (!empty($resD[0]['id'])) {
         $saleId = $resD[0]['id'];
+        woocomm_invfox__trace("Inventory sale created with ID: " . $saleId, "Inventory");
         
-        foreach ($body as $bl) {
+        $lineItemsAdded = 0;
+        foreach ($body as $index => $bl) {
           $bl['id_transfer'] = $saleId;
+          woocomm_invfox__trace("Adding line item " . ($index + 1) . ": " . (isset($bl['title']) ? substr($bl['title'], 0, 30) . "..." : 'Unknown'), "Inventory Line");
           $res2 = $this->api->call('transfer-b', 'insert-into', $bl);
           if ($res2->isErr()) {
-            woocomm_invfox__trace("Failed to add line item to inventory sale: " . print_r($res2->getErr(), true), "ERROR");
+            woocomm_invfox__trace("Failed to add line item to inventory sale: " . print_r($res2->getErr(), true), "Inventory Line Error");
+          } else {
+            $lineItemsAdded++;
           }
         }
+        woocomm_invfox__trace("Added " . $lineItemsAdded . " line items to inventory sale", "Inventory");
       } else {
-        woocomm_invfox__trace("Invalid response from API: missing inventory sale ID", "ERROR");
+        woocomm_invfox__trace("Invalid response from API: missing inventory sale ID", "Inventory Error");
       }
     }
     return $res;

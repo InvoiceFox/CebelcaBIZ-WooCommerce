@@ -1,0 +1,15 @@
+/**
+ * Cebelca BIZ Log Viewer Styles
+ */
+
+.cebelcabiz-log-viewer {
+    margin: 20px 0;
+}
+
+.cebelcabiz-log-actions {
+    margin-bottom: 10px;
+}
+
+.cebelcabiz-log-actions .button {
+    margin-right: 5px;
+}
