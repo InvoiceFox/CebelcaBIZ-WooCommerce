@@ -3,11 +3,11 @@
  * Plugin Name: Cebelca BIZ
  * Plugin URI:
  * Description: Connects WooCommerce to Cebelca.biz for invoicing and optionally inventory
- * Version: 0.8.0
+ * Version: 0.8.4
  * Author: JankoM
- * Author URI: http://refaktorlabs.com
+ * Author URI: https://github.com/refaktor/
  * Developer: Janko M.
- * Developer URI: http://refaktorlabs.com
+ * Developer URI: https://github.com/refaktor/
  * Text Domain: woocommerce-cebelcabiz
  * Domain Path: /languages
  *
@@ -763,12 +763,31 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 					);
 				}
 
+				// Calculate precise net shipping from gross amount to avoid rounding issues
+				// WooCommerce rounds net shipping to 2 decimals, but we need 4 decimals for accurate invoicing
+				// Use rounded values (2 decimals) for gross calculation - this is what customer actually pays
+				$shipping_total = round((float) $order->get_shipping_total(), 2);
+				$shipping_tax = round((float) $order->get_shipping_tax(), 2);
+				$gross_shipping = round($shipping_total + $shipping_tax, 2);
+				
+				// Get the precise VAT rate from the function that can handle small inaccuracies
+				$shipping_vat_rate = calculatePreciseSloVAT($shipping_total, $shipping_tax, $vatLevels);
+				
+				// Calculate precise net price from the rounded gross using the correct VAT rate
+				if ($gross_shipping > 0 && $shipping_vat_rate > 0) {
+					$precise_net_shipping = $gross_shipping / (1 + ($shipping_vat_rate / 100));
+				} else {
+					$precise_net_shipping = $shipping_total;
+				}
+				
+				woocomm_invfox__trace("Shipping - Rounded Net: $shipping_total, Rounded Tax: $shipping_tax, Gross: $gross_shipping, VAT Rate: $shipping_vat_rate%, Precise Net: $precise_net_shipping", "Document");
+
 				$body2[] = array(
 					'title'    => "Dostava - " . $order->get_shipping_method(),
 					'qty'      => 1,
 					'mu'       => '',
-					'price'    => $order->get_shipping_total(),
-					'vat'      => calculatePreciseSloVAT($order->get_shipping_total(), $order->get_shipping_tax(), $vatLevels),
+					'price'    => round($precise_net_shipping, 4),
+					'vat'      => $shipping_vat_rate,
 					'discount' => 0
 				);
 			}
