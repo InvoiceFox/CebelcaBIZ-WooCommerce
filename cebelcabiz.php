@@ -3,7 +3,7 @@
  * Plugin Name: Cebelca BIZ
  * Plugin URI:
  * Description: Connects WooCommerce to Cebelca.biz for invoicing and optionally inventory
- * Version: 0.8.4
+ * Version: 0.8.5
  * Author: JankoM
  * Author URI: https://github.com/refaktor/
  * Developer: Janko M.
@@ -97,7 +97,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 			'order_num_label' => 'Na osnovi naročila:',
 			'round_calculated_netprice_to' => 4,
 			'round_calculated_taxrate_to' => 1,
-			'round_calculated_shipping_taxrate_to' => 2,
+			'round_calculated_shipping_taxrate_to' => 1,
 		];
 
 		/**
@@ -741,7 +741,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 						( $variation_str ? "\n" . $variation_str : "" ), // ( $this->conf['add_post_content_in_item_descr'] == "yes" ? "\n" . $product->get_content : "" ),q
 						'qty'      => $quantity,
 						'mu'       => $mu,
-						'price'    => $price, // round( $item['line_total'] / $item['qty'], $this->conf['round_calculated_netprice_to'] ),
+						'price'    => round($price, $this->conf['round_calculated_netprice_to']), // ,round_calculated_netprice_to), // round( $item['line_total'] / $item['qty'], $this->conf['round_calculated_netprice_to'] ),
 						'vat'      => $vatLevel,
 						'discount' => $discount_percentage
 					);
@@ -786,7 +786,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 					'title'    => "Dostava - " . $order->get_shipping_method(),
 					'qty'      => 1,
 					'mu'       => '',
-					'price'    => round($precise_net_shipping, 4),
+					'price'    => round($precise_net_shipping, $this->conf['round_calculated_netprice_to'] ),
 					'vat'      => $shipping_vat_rate,
 					'discount' => 0
 				);
