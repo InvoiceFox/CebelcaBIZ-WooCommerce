@@ -142,8 +142,8 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
             // Enqueue admin scripts and styles for tabs
             add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
 
-			// Order actions
-			if (!empty($this->conf) && !empty($this->conf['order_actions_enabled'])) {
+			// Order actions (checkbox stores "yes" / "no", so use strict check)
+			if (isset($this->conf['order_actions_enabled']) && 'yes' === $this->conf['order_actions_enabled']) {
 				$this->init_order_actions();
 			}
 		}
@@ -302,6 +302,10 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 		 * @return array Modified actions
 		 */
 		public function add_order_meta_box_actions($actions) {
+			if (!isset($this->conf['order_actions_enabled']) || 'yes' !== $this->conf['order_actions_enabled']) {
+				return $actions;
+			}
+
 			$app_name = esc_html($this->conf['app_name']);
 			
 			$actions['cebelcabiz_create_invoice'] = sprintf(__('%s: Make invoice', 'woocom-invfox'), $app_name);
