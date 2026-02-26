@@ -467,15 +467,20 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 				$api = new InvfoxAPI($this->conf['api_key'], $this->conf['api_domain'], false);
 				$api->setDebugHook("woocomm_invfox__trace");
 				
-				$currentPM = sanitize_text_field($order->get_payment_method_title());
-				woocomm_invfox__trace("Processing payment method: " . $currentPM, "Payment");
+				$currentPM       = sanitize_text_field($order->get_payment_method_title());
+			$currentPM_id    = sanitize_text_field($order->get_payment_method());
+				woocomm_invfox__trace("Processing payment method title: " . $currentPM . " / ID: " . $currentPM_id, "Payment");
 				woocomm_invfox__trace("Payment methods map: " . $this->conf['payment_methods_map'], "Payment");
 				
 				$payment_method = $this->mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+				if ( $payment_method == -2 && ! empty( $currentPM_id ) ) {
+					woocomm_invfox__trace("Title lookup failed, trying payment method ID: " . $currentPM_id, "Payment");
+					$payment_method = $this->mapPaymentMethods($currentPM_id, $this->conf['payment_methods_map']);
+				}
 				woocomm_invfox__trace("Mapped payment method: " . $payment_method, "Payment");
 
 				if ($payment_method == -2) {
-					throw new Exception("Način plačila \"$currentPM\" manjka v nastavitvah pretvorbe. Plačilo v Čebelci ni bilo zabeleženo.");
+					throw new Exception("Način plačila \"$currentPM\" (ID: \"$currentPM_id\") manjka v nastavitvah pretvorbe. Plačilo v Čebelci ni bilo zabeleženo.");
 				} else if ($payment_method == -1) {
 					throw new Exception("Napačna oblika nastavitve: Pretvorba načinov plačila. Plačilo v Čebelci ni bilo zabeleženo.");
 				}
@@ -911,18 +916,23 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 						//			$api->setDebugHook( "woocomm_invfox__trace" );
 
 
-						$currentPM = $order->get_payment_method_title();
+						$currentPM    = $order->get_payment_method_title();
+					$currentPM_id = $order->get_payment_method();
 						woocomm_invfox__trace("Marking invoice as paid", "Payment");
-						woocomm_invfox__trace("Current payment method: " . $currentPM, "Payment");
+						woocomm_invfox__trace("Current payment method title: " . $currentPM . " / ID: " . $currentPM_id, "Payment");
 						woocomm_invfox__trace("Payment methods map: " . $this->conf['payment_methods_map'], "Payment");
 						$payment_method = mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+						if ( $payment_method == -2 && ! empty( $currentPM_id ) ) {
+							woocomm_invfox__trace("Title lookup failed, trying payment method ID: " . $currentPM_id, "Payment");
+							$payment_method = mapPaymentMethods($currentPM_id, $this->conf['payment_methods_map']);
+						}
 						woocomm_invfox__trace("Mapped payment method: " . $payment_method, "Payment");
 						
 						$notices   = get_option( 'cebelcabiz_deferred_admin_notices', array() );
 						$payment_recorded = false;
 						
 						if($payment_method == -2) {
-							$notices[] = "NAPAKA: Način plačila \"$currentPM\" manjka v nastavitvah pretvorbe. Plačilo v Čebelci ni bilo zabeleženo.";
+							$notices[] = "NAPAKA: Način plačila \"$currentPM\" (ID: \"$currentPM_id\") manjka v nastavitvah pretvorbe. Plačilo v Čebelci ni bilo zabeleženo.";
 							$payment_method = "-";
 						}
 						else if($payment_method == -1) {

@@ -144,6 +144,8 @@ Za pakiranje vtičnika v ZIP datoteko uporabite priloženo skripto `package-plug
 
 ## Dnevnik sprememb
 
+**26.02.2026** Izbira jezika pri nastavitvah, določena ali avtomatska na podlagi naročila in multilang pluginov. Pri načinih plačila sedaj delujejo tudi IDji plačil
+
 **03.04.2025** Velika nadgradnja, boljše preverjanje težav, dnevnik dogodkov za reševanje težav z delovanjem, izboljšana dokumentacija in navodila za uporabo.
 
 **28.04.2024** V nastavitve se lahko vnese načine plačila na Woocommerce in njihove ekvivalente na Čebelca.biz in plugin bo dodal pravi način plačila. Če se DDV ne uspe preračunati (primerne stopnje ni v nastavitvah) se račun ne bo izdal oz. davčno potrdil preko API-ja
