@@ -3,7 +3,7 @@
  * Plugin Name: Cebelca BIZ
  * Plugin URI:
  * Description: Connects WooCommerce to Cebelca.biz for invoicing and optionally inventory
- * Version: 0.8.5
+ * Version: 0.8.9
  * Author: JankoM
  * Author URI: https://github.com/refaktor/
  * Developer: Janko M.
