@@ -222,7 +222,7 @@ class InvfoxAPI {
    * @param string $hstyle Header style
    * @return string Path to the downloaded PDF
    */
-  public function downloadPDF($id, $extid, $path, $res='invoice-sent', $hstyle='') {
+  public function downloadPDF($id, $extid, $path, $res='invoice-sent', $hstyle='', $lang='si') {
     // Set document title based on resource type
     $title = "Račun%20št.";
     if ($res == "preinvoice") {
@@ -245,9 +245,14 @@ class InvfoxAPI {
         break;
     }
     
+    $lang = strtolower(substr((string) $lang, 0, 2));
+    if (empty($lang)) {
+      $lang = 'si';
+    }
+
     // Try to use cURL if available
     if (function_exists('curl_init')) {
-      $url = "https://{$this->api->getDomain()}/API-pdf?id=$id&extid=$extid&res={$res}&format=PDF&doctitle={$title}&lang=si&hstyle={$hstyle}";
+      $url = "https://{$this->api->getDomain()}/API-pdf?id=$id&extid=$extid&res={$res}&format=PDF&doctitle={$title}&lang={$lang}&hstyle={$hstyle}";
       
       woocomm_invfox__trace("Downloading PDF from: $url", "DOWNLOADING PDF");
       
@@ -294,7 +299,7 @@ class InvfoxAPI {
       );
       
       $context = stream_context_create($opts);
-      $url = "https://{$this->api->getDomain()}/API-pdf?id=$id&extid=$extid&res={$res}&format=PDF&doctitle={$title}&lang=si&hstyle={$hstyle}";
+      $url = "https://{$this->api->getDomain()}/API-pdf?id=$id&extid=$extid&res={$res}&format=PDF&doctitle={$title}&lang={$lang}&hstyle={$hstyle}";
       
       woocomm_invfox__trace("Downloading PDF from: $url", "DOWNLOADING PDF");
       

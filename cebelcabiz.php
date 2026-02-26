@@ -600,6 +600,9 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 				$this->conf['document_to_make'] = $document_to_make;
 			}
 
+			$invoiceLang = $this->get_order_invoice_language( $order );
+			woocomm_invfox__trace("Detected invoice language: " . $invoiceLang, "Document");
+
 			woocomm_invfox__trace("Creating document: " . $this->conf['document_to_make'], "Document");
 			woocomm_invfox__trace("Payment method: " . $order->get_payment_method(), "Document");
 			woocomm_invfox__trace("Payment method title: " . $order->get_payment_method_title(), "Document");
@@ -979,7 +982,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 						$upload_path    = $uploads['basedir'] . "/invoices";
 						
 						//$filename = $api->downloadInvoicePDF( $order->id, $path );
-						$filename = $api->downloadPDF( 0, $order->get_id(), $upload_path, 'invoice-sent', '' );
+					$filename = $api->downloadPDF( 0, $order->get_id(), $upload_path, 'invoice-sent', '', $invoiceLang );
 						
 						if ($filename === false) {
 							$notices   = get_option( 'cebelcabiz_deferred_admin_notices', array() );
@@ -1045,7 +1048,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 
 					$uploads     = wp_upload_dir();
 					$upload_path    = $uploads['basedir'] . "/invoices";
-					$filename = $api->downloadPDF( 0, $order->get_id(), $upload_path, 'preinvoice', '' );
+					$filename = $api->downloadPDF( 0, $order->get_id(), $upload_path, 'preinvoice', '', $invoiceLang );
 					
 					if ($filename === false) {
 						$notices   = get_option( 'cebelcabiz_deferred_admin_notices', array() );
@@ -1103,6 +1106,41 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 			$notices[] = $notice;
 			update_option('cebelcabiz_deferred_admin_notices', $notices);
 		}
+
+		/**
+		 * Determine invoice language based on order meta and site locale.
+		 *
+		 * @param WC_Order $order Order object
+		 * @return string Two-letter language code (si/en)
+		 */
+		private function get_order_invoice_language( $order ) {
+			$selectedLanguage = isset($this->conf['invoice_language']) ? strtolower($this->conf['invoice_language']) : 'auto';
+			if ( $selectedLanguage === 'si' || $selectedLanguage === 'en' ) {
+				return $selectedLanguage;
+			}
+
+			$lang_keys = array( 'wpml_language', '_language', 'lc_bind_order_language', '_order_language' );
+			$foundLang = '';
+
+			foreach ( $lang_keys as $key ) {
+				$foundLang = $order->get_meta( $key );
+				if ( ! empty( $foundLang ) ) {
+					break;
+				}
+			}
+
+			if ( empty( $foundLang ) ) {
+				$foundLang = get_locale();
+			}
+
+			$cleanLang = strtolower( substr( (string) $foundLang, 0, 2 ) );
+
+			if ( $cleanLang === 'sl' || $cleanLang === 'si' ) {
+				return 'si';
+			}
+
+			return 'en';
+		}
 		
 		/**
 		 * Download and retrieve invoice PDF for an order
@@ -1148,7 +1186,8 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 			$api = new InvfoxAPI( $this->conf['api_key'], $this->conf['api_domain'], true );
 			$api->setDebugHook( "woocomm_invfox__trace" );
 
-			$file = $api->downloadPDF( 0, $order->get_id(), $upload_path, $resource, '' );
+			$invoiceLang = $this->get_order_invoice_language( $order );
+			$file = $api->downloadPDF( 0, $order->get_id(), $upload_path, $resource, '', $invoiceLang );
 			
 			// Check if download was successful
 			if ($file === false) {

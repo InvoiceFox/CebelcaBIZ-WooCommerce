@@ -89,6 +89,10 @@ V razdelku **DODATNE NASTAVITVE** lahko prilagodite še:
 - **Rok plačila pri stranki**: Privzeti rok plačila v dneh za nove stranke.
 - **Besedilo o št. naročila**: Besedilo, ki se prikaže pred številko naročila na računu.
 - **Besedilo za delni seštevek**: Besedilo za prikaz delnega seštevka pred dodajanjem stroškov dostave.
+- **Jezik računa**: Izbira jezika PDF računa. Možnosti:
+  - **Automatic** (privzeto): Plugin samodejno zazna jezik naročila iz meta podatkov večjezičnih vtičnikov (WPML, Polylang, TranslatePress). Če jezik ni zaznan, se uporabi privzeti jezik strani. Slovenska lokalizacija (`sl_SI`) bo dala račun v slovenščini, vse ostale v angleščini.
+  - **Slovene**: PDF račun bo vedno v slovenščini, ne glede na jezik naročila.
+  - **English**: PDF račun bo vedno v angleščini, ne glede na jezik naročila.
 - **Zaokrožanje**: Nastavitve zaokroževanja za neto cene, davčne stopnje in zneske dostave.
 
 ## Beleženje dogodkov (debug)

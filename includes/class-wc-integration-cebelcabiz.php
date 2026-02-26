@@ -23,6 +23,7 @@ if ( ! class_exists( 'WC_Integration_Cebelcabiz' ) && class_exists( 'WC_Integrat
         public $add_post_content_in_item_descr;
         public $partial_sum_label;
         public $order_num_label;
+        public $invoice_language;
         public $round_calculated_taxrate_to;
         public $round_calculated_netprice_to;
         public $round_calculated_shipping_taxrate_to;
@@ -66,6 +67,7 @@ if ( ! class_exists( 'WC_Integration_Cebelcabiz' ) && class_exists( 'WC_Integrat
             $this->add_post_content_in_item_descr = $this->get_option( 'add_post_content_in_item_descr', false );
             $this->partial_sum_label = $this->get_option( 'partial_sum_label', "Seštevek" );
             $this->order_num_label = $this->get_option( 'order_num_label', "Na osnovi naročila:" ); //*
+            $this->invoice_language = $this->get_option( 'invoice_language', 'auto' );
             $this->round_calculated_taxrate_to = $this->get_option( 'round_calculated_taxrate_to', 1 );
             $this->round_calculated_netprice_to = $this->get_option( 'round_calculated_netprice_to', 4 );
             $this->round_calculated_shipping_taxrate_to = $this->get_option( 'round_calculated_shipping_taxrate_to', 0); //*
@@ -326,6 +328,18 @@ if ( ! class_exists( 'WC_Integration_Cebelcabiz' ) && class_exists( 'WC_Integrat
                     'title' => __( 'DODATNE NASTAVITVE', 'woocommerce-integration-demo' ),
                     'type' => 'title',
                     'description' => __( 'Te nastavitve običajno ni potrebno spreminjati.', 'woocommerce-integration-demo' ),
+                ),
+
+                'invoice_language' => array(
+                    'title'       => __( 'Jezik računa', 'woocommerce-integration-demo' ),
+                    'type'        => 'select',
+                    'description' => __( 'Izberite jezik PDF računa. Samodejno uporabi jezik naročila ali privzeti jezik strani.', 'woocommerce-integration-demo' ),
+                    'default'     => 'auto',
+                    'options'     => array(
+                        'auto' => __( 'Automatic', 'woocommerce-integration-demo' ),
+                        'si'   => __( 'Slovene', 'woocommerce-integration-demo' ),
+                        'en'   => __( 'English', 'woocommerce-integration-demo' ),
+                    ),
                 ),
         
                 'add_post_content_in_item_descr' => array(
