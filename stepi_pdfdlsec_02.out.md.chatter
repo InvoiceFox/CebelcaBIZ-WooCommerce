@@ -835,3 +835,485 @@ Content:
 Now let me commit these PDF security and validation improvements:
 ---
 
+[15:52:58] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 53
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:53:02] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=40098 output=121 
+Content:
+
+---
+
+[15:53:02] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 55
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:53:14] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=40268 output=497 
+Content:
+Now let me implement the third and final recommendation - **Common Payment Method Examples**. Let me add this to the integration settings as documentation:
+---
+
+[15:53:14] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 57
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:53:19] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=40797 output=105 
+Content:
+Now I need to also improve the mapping function to handle both title and ID better. Let me find where the mapPaymentMethods function is defined:
+---
+
+[15:53:19] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 59
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:53:23] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=41332 output=104 
+Content:
+Now let me check the current implementation and improve it:
+---
+
+[15:53:23] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 61
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:53:37] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=41962 output=974 
+Content:
+Now let me add a new method to the main class that combines both functions and improves the mapping:
+---
+
+[15:53:37] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 63
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:53:42] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=42959 output=101 
+Content:
+Now let me update one more section that was inconsistent - it's using the global function instead of the class method. Let me find that:
+---
+
+[15:53:42] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 65
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:53:49] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=43227 output=347 
+Content:
+Let me update those global function calls to use the class method:
+---
+
+[15:53:49] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 67
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:53:52] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=43597 output=87 
+Content:
+Now let me find the other instance:
+---
+
+[15:53:52] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 69
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:53:56] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=44439 output=98 
+Content:
+Good, looks like those are already fixed. Let me check if there are any other instances by checking if there's still a global function:
+---
+
+[15:53:56] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 71
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:54:00] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=44568 output=104 
+Content:
+I can remove that global function since we're using the class method now. Let me check where it's used:
+---
+
+[15:54:00] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 73
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:54:03] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=44758 output=100 
+Content:
+Let me update that last occurrence:
+---
+
+[15:54:03] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 75
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:54:09] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: output=120 input=45108 
+Content:
+That's in a commented section, so it's fine. Now let me remove the old global function since it's no longer needed:
+---
+
+[15:54:09] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 77
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:54:12] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=46183 output=86 
+Content:
+Let me remove that global function:
+---
+
+[15:54:12] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 79
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:54:29] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=47186 output=1026 
+Content:
+Let me keep the global function since it might be used by other parts. Instead, let me just commit the improvements we've made so far and document the examples better. 
+
+Let me also add more comprehensive examples to the payment helper:
+---
+
+[15:54:29] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 81
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:54:34] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=48244 output=62 
+Content:
+Now let me commit the final improvements:
+---
+

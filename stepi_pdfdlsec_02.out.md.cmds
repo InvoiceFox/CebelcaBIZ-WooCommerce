@@ -938,3 +938,373 @@ RESULT:
 Successfully replaced text in cebelcabiz.php
 ---
 
+[15:52:58] TOOL: bash
+ARGS:
+  command: git add .
+RESULT:
+
+---
+
+[15:53:02] TOOL: bash
+ARGS:
+  command: git commit -m "Add PDF security and validation functionality
+
+- Secure invoices directory with .htaccess file to deny direct access
+- Add comprehensive PDF validation (header, EOF marker, file size)
+- Update all PDF download locations to use validation
+- Remove invalid PDF files automatically
+- Improve error messaging for PDF validation failures"
+RESULT:
+[master 5325fe5] Add PDF security and validation functionality
+ 5 files changed, 1282 insertions(+), 29 deletions(-)
+
+---
+
+[15:53:14] TOOL: edit
+ARGS:
+  path: includes/class-wc-integration-cebelcabiz.php
+  oldText:                 'payment_methods_map' => array(
+                    'title'             => __( 'Pretvorba načinov plačila', 'woocommerce-integration-demo' ),
+                    'type'              => 'text',
+                    'default'           => '',
+                    'description'       => __( 'Tu v obliki "Način plačila woocomerce->Način plačila Čebelca;...." vnesete kako se naj načini plačila v vašem Woocommerce pretvorijo v načina plačila na Čebelci', 'woocommerce-integration-demo' ),
+                ),
+  newText:                 'payment_methods_map' => array(
+                    'title'             => __( 'Pretvorba načinov plačila', 'woocommerce-integration-demo' ),
+                    'type'              => 'text',
+                    'default'           => 'stripe->Kreditna kartica;paypal->PayPal;bacs->Bančno nakazilo;cod->Gotovina ob dostavi',
+                    'description'       => __( 'Tu v obliki "Način plačila woocomerce->Način plačila Čebelca;...." vnesete kako se naj načini plačila v vašem Woocommerce pretvorijo v načina plačila na Čebelci. Uporabite lahko ID ali ime načina plačila.', 'woocommerce-integration-demo' ),
+                ),
+RESULT:
+Successfully replaced text in includes/class-wc-integration-cebelcabiz.php
+---
+
+[15:53:19] TOOL: bash
+ARGS:
+  command: grep -n "mapPaymentMethods\|function.*mapPayment" *.php lib/*.php
+RESULT:
+cebelcabiz-improved.php:451:				$payment_method = mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+cebelcabiz.original.php:216:            $payment_method = mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+cebelcabiz.original.php:571:                          $payment_method = mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+cebelcabiz.original.php:594:                          $payment_method = mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+cebelcabiz.original.php:902:function mapPaymentMethods($key, $methodsMap){
+cebelcabiz.php:547:				$payment_method = $this->mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+cebelcabiz.php:550:					$payment_method = $this->mapPaymentMethods($currentPM_id, $this->conf['payment_methods_map']);
+cebelcabiz.php:996:						$payment_method = mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+cebelcabiz.php:999:							$payment_method = mapPaymentMethods
+...[truncated 252 chars]
+---
+
+[15:53:23] TOOL: read
+ARGS:
+  path: cebelcabiz.php
+  offset: 1539
+  limit: 50
+RESULT:
+function mapPaymentMethods($key, $methodsMap) {
+    try {
+        if (empty($key) || empty($methodsMap)) {
+            woocomm_invfox__trace("Empty payment method or mapping", "WARNING");
+            return -2; // Missing data
+        }
+        
+        $mmap = str_replace("&gt;", ">", $methodsMap);
+        
+        woocomm_invfox__trace($mmap, "Payment methods map");
+        
+        // Check if the string is in the correct format using a regular expression
+        if (!preg_match('/([a-zA-Z0-9čČšŠžŽ\/_\-\(\)\* ]+->[a-zA-Z0-9čČšŠžŽ_\- ]+)+/', $mmap)) {
+            woocomm_invfox__trace("Invalid payment methods map format", "ERROR");
+            return -1; // Invalid format
+        }
+        
+        // Split the string into pairs
+        $pairs = explode(';', $mmap);
+        
+        // Iterate through each pair
+        foreach ($pairs as $pair) {
+            if (empty($pair)) {
+                continue; // Skip empty pairs
+            }
+            
+            // Check i
+...[truncated 808 chars]
+---
+
+[15:53:37] TOOL: edit
+ARGS:
+  path: cebelcabiz.php
+  oldText:         /**
+         * Validate PDF file integrity
+         * 
+         * @param string $filepath Path to the PDF file
+         * @return bool True if PDF is valid, false otherwise
+         */
+  newText:         /**
+         * Map payment method from WooCommerce to Cebelca BIZ format
+         * Supports both payment method title and ID
+         * 
+         * @param string $wc_method WooCommerce payment method (title or ID)
+         * @param string $methods_map Payment methods mapping string  
+         * @return string|int Mapped payment method or error code (-1 format error, -2 not found)
+         */
+        private function mapPaymentMethods($wc_method, $methods_map) {
+            if (empty($wc_method) || empty($methods_map)) {
+                woocomm_invfox__trace("Empty payment method or mapping", "Payment Mapping");
+                return -2; // Missing data
+            }
+            
+            // Clean up the mapping string (handle HTML entities)
+            $mmap = str_replace("&gt;", ">", $methods_map);
+            woocomm_invfox__trace("Processing payment method: '$wc_method' with mapping: '$mmap'", "Payment Mapping");
+            
+            // Validate format - allow more flexible characters including spaces and special chars
+            if (!preg_match('/([^-;]+->[^-;]+)/', $mmap)) {
+                woocomm_invfox__trace("Invalid payment methods map format: '$mmap'", "Payment Mapping Error");
+                return -1; // Invalid format
+            }
+            
+            // Split the string into pairs
+            $pairs = explode(';', $mmap);
+            
+            // Try exact matches first, then partial matches
+            foreach ($pairs as $pair) {
+                $pair = trim($pair);
+                if (empty($pair) || strpos($pair, '->') === false) {
+                    continue; // Skip invalid pairs
+                }
+                
+                list($pairKey, $value) = explode('->', $pair, 2);
+                $pairKey = trim($pairKey);
+                $value = trim($value);
+                
+                if (empty($pairKey) || empty($value)) {
+                    continue; // Skip empty keys/values
+                }
+                
+                // Check for exact match (case insensitive)
+                if (strcasecmp($pairKey, $wc_method) === 0) {
+                    woocomm_invfox__trace("Found exact match: '$pairKey' -> '$value'", "Payment Mapping");
+                    return $value;
+                }
+                
+                // Check for wildcard match
+                if (strpos($pairKey, "*") !== false) {
+                    $pattern = str_replace("*", ".*", preg_quote($pairKey, '/'));
+                    if (preg_match('/^' . $pattern . '$/i', $wc_method)) {
+                        woocomm_invfox__trace("Found wildcard match: '$pairKey' -> '$value'", "Payment Mapping");
+                        return $value;
+                    }
+                }
+            }
+            
+            // No match found
+            woocomm_invfox__trace("No mapping found for payment method: '$wc_method'", "Payment Mapping");
+            return -2; // Not found
+        }
+
+        /**
+         * Validate PDF file integrity
+         * 
+         * @param string $filepath Path to the PDF file
+         * @return bool True if PDF is valid, false otherwise
+         */
+RESULT:
+Successfully replaced text in cebelcabiz.php
+---
+
+[15:53:42] TOOL: bash
+ARGS:
+  command: grep -n "mapPaymentMethods(" cebelcabiz.php | head -5
+RESULT:
+280:        private function mapPaymentMethods($wc_method, $methods_map) {
+610:				$payment_method = $this->mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+613:					$payment_method = $this->mapPaymentMethods($currentPM_id, $this->conf['payment_methods_map']);
+1059:						$payment_method = mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+1062:							$payment_method = mapPaymentMethods($currentPM_id, $this->conf['payment_methods_map']);
+
+---
+
+[15:53:49] TOOL: edit
+ARGS:
+  path: cebelcabiz.php
+  oldText: 						$payment_method = mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+						if ( $payment_method == -2 && ! empty( $currentPM_id ) ) {
+							woocomm_invfox__trace("Title lookup failed, trying payment method ID: " . $currentPM_id, "Payment");
+							$payment_method = mapPaymentMethods($currentPM_id, $this->conf['payment_methods_map']);
+						}
+  newText: 						$payment_method = $this->mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+						if ( $payment_method == -2 && ! empty( $currentPM_id ) ) {
+							woocomm_invfox__trace("Title lookup failed, trying payment method ID: " . $currentPM_id, "Payment");
+							$payment_method = $this->mapPaymentMethods($currentPM_id, $this->conf['payment_methods_map']);
+						}
+RESULT:
+Successfully replaced text in cebelcabiz.php
+---
+
+[15:53:52] TOOL: bash
+ARGS:
+  command: grep -A5 -B5 "mapPaymentMethods(\$currentPM," cebelcabiz.php
+RESULT:
+				$currentPM       = sanitize_text_field($order->get_payment_method_title());
+			$currentPM_id    = sanitize_text_field($order->get_payment_method());
+				woocomm_invfox__trace("Processing payment method title: " . $currentPM . " / ID: " . $currentPM_id, "Payment");
+				woocomm_invfox__trace("Payment methods map: " . $this->conf['payment_methods_map'], "Payment");
+				
+				$payment_method = $this->mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+				if ( $payment_method == -2 && ! empty( $currentPM_id ) ) {
+					woocomm_invfox__trace("Title lookup failed, trying payment method ID: " . $currentPM_id, "Payment");
+					$payment_method = $this->mapPaymentMethods($currentPM_id, $this->conf['payment_methods_map']);
+				}
+				woocomm_invfox__trace("Mapped payment method: " . $payment_method, "Payment");
+--
+						$currentPM    = $order->get_payment_method_title();
+					$currentPM_id = $order->get_payment_method();
+						woocomm_invfox__trace("Marking invoice as paid", "Paym
+...[truncated 1296 chars]
+---
+
+[15:53:56] TOOL: bash
+ARGS:
+  command: grep -n "^function mapPaymentMethods" cebelcabiz.php
+RESULT:
+1602:function mapPaymentMethods($key, $methodsMap) {
+
+---
+
+[15:54:00] TOOL: bash
+ARGS:
+  command: grep -n "mapPaymentMethods(" cebelcabiz.php | grep -v "this->mapPaymentMethods"
+RESULT:
+280:        private function mapPaymentMethods($wc_method, $methods_map) {
+1096:                          $payment_method = mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+1602:function mapPaymentMethods($key, $methodsMap) {
+
+---
+
+[15:54:03] TOOL: read
+ARGS:
+  path: cebelcabiz.php
+  offset: 1090
+  limit: 15
+RESULT:
+						
+						update_option( 'cebelcabiz_deferred_admin_notices', $notices );
+						
+						/*
+						
+                          $currentPM = $order->get_payment_method_title();
+                          $payment_method = mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+
+                          $notices   = get_option( 'cebelcabiz_deferred_admin_notices', array() );
+                          if($payment_method == -2) {
+                          $notices[] = "Način plačila $currentPM manjak v nastavitvah pretvorbe. Plačilo v Čebelci ni bilo zabeleženo.";
+                          }
+                          else if($payment_method == -1) {
+                          $notices[] = "Napačna oblika nastavitve: Pretvorba načinov plačila. Plačilo v Čebelci ni bilo zabeleženo.";
+                          }
+---
+
+[15:54:09] TOOL: read
+ARGS:
+  path: cebelcabiz.php
+  offset: 1600
+  limit: 100
+RESULT:
+ * @return string|int Cebelca BIZ payment method or error code
+ */
+function mapPaymentMethods($key, $methodsMap) {
+    try {
+        if (empty($key) || empty($methodsMap)) {
+            woocomm_invfox__trace("Empty payment method or mapping", "WARNING");
+            return -2; // Missing data
+        }
+        
+        $mmap = str_replace("&gt;", ">", $methodsMap);
+        
+        woocomm_invfox__trace($mmap, "Payment methods map");
+        
+        // Check if the string is in the correct format using a regular expression
+        if (!preg_match('/([a-zA-Z0-9čČšŠžŽ\/_\-\(\)\* ]+->[a-zA-Z0-9čČšŠžŽ_\- ]+)+/', $mmap)) {
+            woocomm_invfox__trace("Invalid payment methods map format", "ERROR");
+            return -1; // Invalid format
+        }
+        
+        // Split the string into pairs
+        $pairs = explode(';', $mmap);
+        
+        // Iterate through each pair
+        foreach ($pairs as $pair) {
+            if (empty($pair)) {
+                continue; //
+...[truncated 2398 chars]
+---
+
+[15:54:12] TOOL: bash
+ARGS:
+  command: grep -n "^function mapPaymentMethods" -A 100 cebelcabiz.php | head -70
+RESULT:
+1602:function mapPaymentMethods($key, $methodsMap) {
+1603-    try {
+1604-        if (empty($key) || empty($methodsMap)) {
+1605-            woocomm_invfox__trace("Empty payment method or mapping", "WARNING");
+1606-            return -2; // Missing data
+1607-        }
+1608-        
+1609-        $mmap = str_replace("&gt;", ">", $methodsMap);
+1610-        
+1611-        woocomm_invfox__trace($mmap, "Payment methods map");
+1612-        
+1613-        // Check if the string is in the correct format using a regular expression
+1614-        if (!preg_match('/([a-zA-Z0-9čČšŠžŽ\/_\-\(\)\* ]+->[a-zA-Z0-9čČšŠžŽ_\- ]+)+/', $mmap)) {
+1615-            woocomm_invfox__trace("Invalid payment methods map format", "ERROR");
+1616-            return -1; // Invalid format
+1617-        }
+1618-        
+1619-        // Split the string into pairs
+1620-        $pairs = explode(';', $mmap);
+1621-        
+1622-        // Iterate through each pair
+1623-        foreach ($pairs as $pair) {
+1624-            
+...[truncated 1791 chars]
+---
+
+[15:54:29] TOOL: edit
+ARGS:
+  path: includes/class-wc-integration-cebelcabiz.php
+  oldText:             // Show mapping examples
+            echo '<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">';
+            echo '<h5>' . __('Primeri pretvorbe načinov plačila:', 'woocommerce-integration-demo') . '</h5>';
+            echo '<div style="font-family: monospace; font-size: 13px; line-height: 1.8;">';
+            echo '<div><strong>Stripe:</strong> <code>stripe->Kreditna kartica</code></div>';
+            echo '<div><strong>PayPal:</strong> <code>paypal->PayPal</code></div>';
+            echo '<div><strong>Bančno nakazilo:</strong> <code>bacs->Bančno nakazilo</code></div>';
+            echo '<div><strong>Gotovina ob dostavi:</strong> <code>cod->Gotovina ob dostavi</code></div>';
+            echo '<div><strong>Kombinirano:</strong> <code>stripe->Kreditna kartica;paypal->PayPal;bacs->Bančno nakazilo</code></div>';
+            echo '</div>';
+            echo '</div>';
+  newText:             // Show mapping examples
+            echo '<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">';
+            echo '<h5>' . __('Primeri pretvorbe načinov plačila:', 'woocommerce-integration-demo') . '</h5>';
+            echo '<div style="margin-bottom: 10px;">';
+            echo '<em>' . __('Uporabite lahko ID ali naziv načina plačila. Pretvorba razlikuje med velikimi in malimi črkami.', 'woocommerce-integration-demo') . '</em>';
+            echo '</div>';
+            echo '<div style="font-family: monospace; font-size: 13px; line-height: 2;">';
+            echo '<div><strong>Stripe (ID):</strong> <code>stripe->Kreditna kartica</code></div>';
+            echo '<div><strong>Stripe (naziv):</strong> <code>Credit Card (Stripe)->Kreditna kartica</code></div>';
+            echo '<div><strong>PayPal:</strong> <code>paypal->PayPal</code></div>';
+            echo '<div><strong>Bančno nakazilo:</strong> <code>bacs->Bančno nakazilo</code></div>';
+            echo '<div><strong>Direktno bančno nakazilo:</strong> <code>Direct Bank Transfer->Bančno nakazilo</code></div>';
+            echo '<div><strong>Gotovina ob dostavi:</strong> <code>cod->Gotovina ob dostavi</code></div>';
+            echo '<div><strong>Univerzalni vnos (vse):</strong> <code>*->Splošno plačilo</code></div>';
+            echo '</div>';
+            echo '<div style="margin-top: 10px; padding: 10px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 3px;">';
+            echo '<strong>' . __('Kombiniran primer:', 'woocommerce-integration-demo') . '</strong><br>';
+            echo '<code style="font-size: 12px;">stripe->Kreditna kartica;paypal->PayPal;bacs->Bančno nakazilo;cod->Gotovina ob dostavi</code>';
+            echo '</div>';
+            echo '</div>';
+RESULT:
+Successfully replaced text in includes/class-wc-integration-cebelcabiz.php
+---
+

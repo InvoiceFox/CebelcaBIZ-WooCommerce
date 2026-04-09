@@ -219,3 +219,131 @@ Now let me commit these PDF security and validation improvements:
 [15:52:58] LLM wants to execute tools
 
 [bash] git add .
+[15:52:58] Tool bash executed successfully
+
+[15:52:58] Turn 27: Sending request to LLM
+
+[2.4809$] [15:53:02] Received response from LLM, tokens: 40098 in, 121 out
+[15:53:02] LLM wants to execute tools
+
+[bash] git commit -m "Add PDF security and validation functionality
+
+- Secure invoices directory with .htaccess file to deny direct access
+- Add comprehensive PDF validation (header, EOF marker, file size)
+- Update all PDF download locations to use validation
+- Remove invalid PDF files automatically
+- Improve error messaging for PDF validation failures"
+[15:53:02] Tool bash executed successfully
+
+[15:53:02] Turn 28: Sending request to LLM
+Now let me implement the third and final recommendation - **Common Payment Method Examples**. Let me add this to the integration settings as documentation:
+[2.6092$] [15:53:14] Received response from LLM, tokens: 40268 in, 497 out
+[15:53:14] LLM wants to execute tools
+
+[edit] includes/class-wc-integration-cebelcabiz.php
+[15:53:14] Tool edit executed successfully
+
+[15:53:14] Turn 29: Sending request to LLM
+Now I need to also improve the mapping function to handle both title and ID better. Let me find where the mapPaymentMethods function is defined:
+[2.7331$] [15:53:19] Received response from LLM, tokens: 40797 in, 105 out
+[15:53:19] LLM wants to execute tools
+
+[bash] grep -n "mapPaymentMethods\|function.*mapPayment" *.php lib/*.php
+[15:53:19] Tool bash executed successfully
+
+[15:53:19] Turn 30: Sending request to LLM
+Now let me check the current implementation and improve it:
+[2.8587$] [15:53:23] Received response from LLM, tokens: 41332 in, 104 out
+[15:53:23] LLM wants to execute tools
+
+[read] cebelcabiz.php
+[15:53:23] Tool read executed successfully
+
+[15:53:23] Turn 31: Sending request to LLM
+Now let me add a new method to the main class that combines both functions and improves the mapping:
+[2.9992$] [15:53:37] Received response from LLM, tokens: 41962 in, 974 out
+[15:53:37] LLM wants to execute tools
+
+[edit] cebelcabiz.php
+[15:53:37] Tool edit executed successfully
+
+[15:53:37] Turn 32: Sending request to LLM
+Now let me update one more section that was inconsistent - it's using the global function instead of the class method. Let me find that:
+[3.1296$] [15:53:42] Received response from LLM, tokens: 42959 in, 101 out
+[15:53:42] LLM wants to execute tools
+
+[bash] grep -n "mapPaymentMethods(" cebelcabiz.php | head -5
+[15:53:42] Tool bash executed successfully
+
+[15:53:42] Turn 33: Sending request to LLM
+Let me update those global function calls to use the class method:
+[3.2644$] [15:53:49] Received response from LLM, tokens: 43227 in, 347 out
+[15:53:49] LLM wants to execute tools
+
+[edit] cebelcabiz.php
+[15:53:49] Tool edit executed successfully
+
+[15:53:49] Turn 34: Sending request to LLM
+Now let me find the other instance:
+[3.3965$] [15:53:52] Received response from LLM, tokens: 43597 in, 87 out
+[15:53:52] LLM wants to execute tools
+
+[bash] grep -A5 -B5 "mapPaymentMethods(\$currentPM," cebelcabiz.php
+[15:53:52] Tool bash executed successfully
+
+[15:53:52] Turn 35: Sending request to LLM
+Good, looks like those are already fixed. Let me check if there are any other instances by checking if there's still a global function:
+[3.5313$] [15:53:56] Received response from LLM, tokens: 44439 in, 98 out
+[15:53:56] LLM wants to execute tools
+
+[bash] grep -n "^function mapPaymentMethods" cebelcabiz.php
+[15:53:56] Tool bash executed successfully
+
+[15:53:56] Turn 36: Sending request to LLM
+I can remove that global function since we're using the class method now. Let me check where it's used:
+[3.6666$] [15:54:00] Received response from LLM, tokens: 44568 in, 104 out
+[15:54:00] LLM wants to execute tools
+
+[bash] grep -n "mapPaymentMethods(" cebelcabiz.php | grep -v "this->mapPaymentMethods"
+[15:54:00] Tool bash executed successfully
+
+[15:54:00] Turn 37: Sending request to LLM
+Let me update that last occurrence:
+[3.8024$] [15:54:03] Received response from LLM, tokens: 44758 in, 100 out
+[15:54:03] LLM wants to execute tools
+
+[read] cebelcabiz.php
+[15:54:03] Tool read executed successfully
+
+[15:54:03] Turn 38: Sending request to LLM
+That's in a commented section, so it's fine. Now let me remove the old global function since it's no longer needed:
+[3.9395$] [15:54:09] Received response from LLM, tokens: 45108 in, 120 out
+[15:54:09] LLM wants to execute tools
+
+[read] cebelcabiz.php
+[15:54:09] Tool read executed successfully
+
+[15:54:09] Turn 39: Sending request to LLM
+Let me remove that global function:
+[4.0793$] [15:54:12] Received response from LLM, tokens: 46183 in, 86 out
+[15:54:12] LLM wants to execute tools
+
+[bash] grep -n "^function mapPaymentMethods" -A 100 cebelcabiz.php | head -70
+[15:54:12] Tool bash executed successfully
+
+[15:54:12] Turn 40: Sending request to LLM
+Let me keep the global function since it might be used by other parts. Instead, let me just commit the improvements we've made so far and document the examples better. 
+
+Let me also add more comprehensive examples to the payment helper:
+[4.2363$] [15:54:29] Received response from LLM, tokens: 47186 in, 1026 out
+[15:54:29] LLM wants to execute tools
+
+[edit] includes/class-wc-integration-cebelcabiz.php
+[15:54:29] Tool edit executed successfully
+
+[15:54:29] Turn 41: Sending request to LLM
+Now let me commit the final improvements:
+[4.3819$] [15:54:34] Received response from LLM, tokens: 48244 in, 62 out
+[15:54:34] LLM wants to execute tools
+
+[bash] git add .

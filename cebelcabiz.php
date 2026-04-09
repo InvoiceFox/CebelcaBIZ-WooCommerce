@@ -270,6 +270,69 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
         }
 
         /**
+         * Map payment method from WooCommerce to Cebelca BIZ format
+         * Supports both payment method title and ID
+         * 
+         * @param string $wc_method WooCommerce payment method (title or ID)
+         * @param string $methods_map Payment methods mapping string  
+         * @return string|int Mapped payment method or error code (-1 format error, -2 not found)
+         */
+        private function mapPaymentMethods($wc_method, $methods_map) {
+            if (empty($wc_method) || empty($methods_map)) {
+                woocomm_invfox__trace("Empty payment method or mapping", "Payment Mapping");
+                return -2; // Missing data
+            }
+            
+            // Clean up the mapping string (handle HTML entities)
+            $mmap = str_replace("&gt;", ">", $methods_map);
+            woocomm_invfox__trace("Processing payment method: '$wc_method' with mapping: '$mmap'", "Payment Mapping");
+            
+            // Validate format - allow more flexible characters including spaces and special chars
+            if (!preg_match('/([^-;]+->[^-;]+)/', $mmap)) {
+                woocomm_invfox__trace("Invalid payment methods map format: '$mmap'", "Payment Mapping Error");
+                return -1; // Invalid format
+            }
+            
+            // Split the string into pairs
+            $pairs = explode(';', $mmap);
+            
+            // Try exact matches first, then partial matches
+            foreach ($pairs as $pair) {
+                $pair = trim($pair);
+                if (empty($pair) || strpos($pair, '->') === false) {
+                    continue; // Skip invalid pairs
+                }
+                
+                list($pairKey, $value) = explode('->', $pair, 2);
+                $pairKey = trim($pairKey);
+                $value = trim($value);
+                
+                if (empty($pairKey) || empty($value)) {
+                    continue; // Skip empty keys/values
+                }
+                
+                // Check for exact match (case insensitive)
+                if (strcasecmp($pairKey, $wc_method) === 0) {
+                    woocomm_invfox__trace("Found exact match: '$pairKey' -> '$value'", "Payment Mapping");
+                    return $value;
+                }
+                
+                // Check for wildcard match
+                if (strpos($pairKey, "*") !== false) {
+                    $pattern = str_replace("*", ".*", preg_quote($pairKey, '/'));
+                    if (preg_match('/^' . $pattern . '$/i', $wc_method)) {
+                        woocomm_invfox__trace("Found wildcard match: '$pairKey' -> '$value'", "Payment Mapping");
+                        return $value;
+                    }
+                }
+            }
+            
+            // No match found
+            woocomm_invfox__trace("No mapping found for payment method: '$wc_method'", "Payment Mapping");
+            return -2; // Not found
+        }
+
+        /**
          * Validate PDF file integrity
          * 
          * @param string $filepath Path to the PDF file
@@ -993,10 +1056,10 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 						woocomm_invfox__trace("Marking invoice as paid", "Payment");
 						woocomm_invfox__trace("Current payment method title: " . $currentPM . " / ID: " . $currentPM_id, "Payment");
 						woocomm_invfox__trace("Payment methods map: " . $this->conf['payment_methods_map'], "Payment");
-						$payment_method = mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+						$payment_method = $this->mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
 						if ( $payment_method == -2 && ! empty( $currentPM_id ) ) {
 							woocomm_invfox__trace("Title lookup failed, trying payment method ID: " . $currentPM_id, "Payment");
-							$payment_method = mapPaymentMethods($currentPM_id, $this->conf['payment_methods_map']);
+							$payment_method = $this->mapPaymentMethods($currentPM_id, $this->conf['payment_methods_map']);
 						}
 						woocomm_invfox__trace("Mapped payment method: " . $payment_method, "Payment");
 						
