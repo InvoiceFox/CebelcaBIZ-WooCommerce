@@ -1,0 +1,768 @@
+# Tool Commands Log - stepi_pdfdlsec_01.out.md
+# Started at 2026-04-09 15:38:15
+
+[15:38:18] TOOL: bash
+ARGS:
+  command: find . -type f -name "*.php" | head -20
+RESULT:
+./lib/invfoxapi.php
+./lib/pulp/Format.php
+./lib/strpcapi.php
+./cebelcabiz.original.php
+./includes/class-wc-cebelcabiz-log-viewer.php
+./includes/class-wc-integration-cebelcabiz.php
+./cebelcabiz.php
+./cebelcabiz-improved.php
+./cebelcabiz-woocommerce/lib/invfoxapi.php
+./cebelcabiz-woocommerce/lib/pulp/Format.php
+./cebelcabiz-woocommerce/lib/strpcapi.php
+./cebelcabiz-woocommerce/includes/class-wc-cebelcabiz-log-viewer.php
+./cebelcabiz-woocommerce/includes/class-wc-integration-cebelcabiz.php
+./cebelcabiz-woocommerce/cebelcabiz.php
+./update_invt.php
+
+---
+
+[15:38:20] TOOL: read
+ARGS:
+  path: ./cebelcabiz.php
+RESULT:
+<?php
+/**
+ * Plugin Name: Cebelca BIZ
+ * Plugin URI:
+ * Description: Connects WooCommerce to Cebelca.biz for invoicing and optionally inventory
+ * Version: 0.8.9
+ * Author: JankoM
+ * Author URI: https://github.com/refaktor/
+ * Developer: Janko M.
+ * Developer URI: https://github.com/refaktor/
+ * Text Domain: woocommerce-cebelcabiz
+ * Domain Path: /languages
+ *
+ */
+
+// Status: Stable
+
+if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
+
+    // Constants for plugin configuration
+    define("WOOCOMM_INVFOX_LOG_FILE", WP_CONTENT_DIR . '/cebelcabiz-debug.log');
+    define("WOOCOMM_INVFOX_VERSION", '0.8.0');
+    
+    // Debug mode will be set based on settings
+    $debug_enabled = false;
+    $settings = get_option('woocommerce_cebelcabiz_settings');
+    if (isset($settings['debug_mode']) && $settings['debug_mode'] === 'yes') {
+        $debug_enabled = true;
+    }
+    define("WOOCOMM_INVFOX_DEBUG", $debug_enabled);
+    
+    /**
+     * Debug logging function
+     * 
+     * @param mixed $x The data to l
+...[truncated 50215 chars]
+---
+
+[15:38:23] TOOL: read
+ARGS:
+  path: ./cebelcabiz.php
+  offset: 600
+  limit: 100
+RESULT:
+            $vatLevels = parseVatLevels($this->conf['vat_levels_list']);
+            
+			$order = new WC_Order( $order_id );
+
+			if ( $order->get_total() < 0.001 ) {
+				return true;	
+			}
+			
+			if ( $document_to_make ) {
+				$this->conf['document_to_make'] = $document_to_make;
+			}
+
+			$invoiceLang = $this->get_order_invoice_language( $order );
+			woocomm_invfox__trace("Detected invoice language: " . $invoiceLang, "Document");
+
+			woocomm_invfox__trace("Creating document: " . $this->conf['document_to_make'], "Document");
+			woocomm_invfox__trace("Payment method: " . $order->get_payment_method(), "Document");
+			woocomm_invfox__trace("Payment method title: " . $order->get_payment_method_title(), "Document");
+
+			$api = new InvfoxAPI( $this->conf['api_key'], $this->conf['api_domain'], true );
+            //			$api->setDebugHook( "woocomm_invfox__trace" );
+
+			// Try WooCommerce order meta first (modern method, compatible with HPOS)
+			$vatNum = $order->get_meta( 'vat_number' );
+			if (
+...[truncated 3776 chars]
+---
+
+[15:38:26] TOOL: bash
+ARGS:
+  command: grep -n "mapPaymentMethods" *.php
+RESULT:
+cebelcabiz-improved.php:451:				$payment_method = mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+cebelcabiz.original.php:216:            $payment_method = mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+cebelcabiz.original.php:571:                          $payment_method = mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+cebelcabiz.original.php:594:                          $payment_method = mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+cebelcabiz.original.php:902:function mapPaymentMethods($key, $methodsMap){
+cebelcabiz.php:479:				$payment_method = $this->mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+cebelcabiz.php:482:					$payment_method = $this->mapPaymentMethods($currentPM_id, $this->conf['payment_methods_map']);
+cebelcabiz.php:928:						$payment_method = mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+cebelcabiz.php:931:							$payment_method = mapPaymentMethods
+...[truncated 251 chars]
+---
+
+[15:38:29] TOOL: read
+ARGS:
+  path: ./cebelcabiz.php
+  offset: 1480
+  limit: 50
+RESULT:
+ */
+function mapPaymentMethods($key, $methodsMap) {
+    try {
+        if (empty($key) || empty($methodsMap)) {
+            woocomm_invfox__trace("Empty payment method or mapping", "WARNING");
+            return -2; // Missing data
+        }
+        
+        $mmap = str_replace("&gt;", ">", $methodsMap);
+        
+        woocomm_invfox__trace($mmap, "Payment methods map");
+        
+        // Check if the string is in the correct format using a regular expression
+        if (!preg_match('/([a-zA-Z0-9čČšŠžŽ\/_\-\(\)\* ]+->[a-zA-Z0-9čČšŠžŽ_\- ]+)+/', $mmap)) {
+            woocomm_invfox__trace("Invalid payment methods map format", "ERROR");
+            return -1; // Invalid format
+        }
+        
+        // Split the string into pairs
+        $pairs = explode(';', $mmap);
+        
+        // Iterate through each pair
+        foreach ($pairs as $pair) {
+            if (empty($pair)) {
+                continue; // Skip empty pairs
+            }
+            
+            // Che
+...[truncated 802 chars]
+---
+
+[15:38:32] TOOL: read
+ARGS:
+  path: ./cebelcabiz.php
+  offset: 1530
+  limit: 50
+RESULT:
+        }
+        
+        // Return -2 if no matching key is found
+        woocomm_invfox__trace("No matching payment method found for: $key", "WARNING");
+        return -2;
+    } catch (Exception $e) {
+        woocomm_invfox__trace("Error mapping payment methods: " . $e->getMessage(), "ERROR");
+        return -1;
+    }
+}
+
+/**
+ * Check if a payment method is amongst the fiscalized payment methods
+ * 
+ * @param string $po Payment method
+ * @param string $options Fiscalized payment methods
+ * @return bool True if payment method should be fiscalized
+ */
+function isPaymentAmongst($po, $options) {
+    try {
+        if (empty($options)) {
+            return false;
+        }
+        
+        // Check if there is a * , if it is, answer true for any payment method
+        if (strpos($options, "*") !== false) {
+            return true;
+        }
+        
+        if (empty($po)) {
+            return false;
+        }
+        
+        // Convert both strings to lowercase for case-insensitive searc
+...[truncated 542 chars]
+---
+
+[15:38:35] TOOL: read
+ARGS:
+  path: ./cebelcabiz.php
+  offset: 1170
+  limit: 150
+RESULT:
+		 * 
+		 * @param WC_Order $order Order object
+		 * @param string $resource Resource type (e.g., 'invoice-sent', 'preinvoice')
+		 * @param string $meta_key Optional meta key to store the PDF path
+		 * @return string|bool Path to downloaded file or false on failure
+		 */
+		function _woocommerce_order_invoice_pdf($order, $resource, $meta_key = 'invoicefox_attached_pdf') {
+			// If we don't have the PDF or the file doesn't exist, download it
+			woocomm_invfox__trace("No existing PDF found for " . $resource . ", downloading new one", "PDF");
+			
+			$uploads     = wp_upload_dir();
+			$upload_path = $uploads['basedir'] . '/invoices';
+			
+			// Check if invoices directory exists and is writable
+			if (!is_dir($upload_path)) {
+				woocomm_invfox__trace("Invoices directory doesn't exist, attempting to create it: " . $upload_path, "PDF Error");
+				$dir_created = wp_mkdir_p($upload_path);
+				
+				if (!$dir_created) {
+					woocomm_invfox__trace("Failed to create invoices directory", "PDF Error")
+...[truncated 6136 chars]
+---
+
+[15:38:38] TOOL: read
+ARGS:
+  path: ./lib/invfoxapi.php
+  limit: 200
+RESULT:
+<?php
+/**
+ * InvfoxAPI - High-level API client for Cebelca BIZ service
+ * 
+ * This class provides methods for interacting with the Cebelca BIZ API
+ */
+
+// Global response headers array for PDF downloads
+$responseHeaders = array();
+
+/**
+ * Generate a random string for unique filenames
+ * 
+ * @param int $length Length of the random string
+ * @return string Random string
+ */
+function generateRandomString($length = 12) {
+  $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  $randomString = '';
+  for ($i = 0; $i < $length; $i++) {
+    $randomString .= $characters[rand(0, strlen($characters) - 1)];
+  }
+  return $randomString;
+}
+
+/**
+ * Read header callback for cURL
+ * 
+ * @param resource $ch cURL handle
+ * @param string $header Header line
+ * @return int Length of the header
+ */
+function readHeader($ch, $header) {
+    if (defined('WOOCOMM_INVFOX_DEBUG') && WOOCOMM_INVFOX_DEBUG) {
+        woocomm_invfox__trace($header, "API Response Header");
+    }
+    
+    globa
+...[truncated 6081 chars]
+---
+
+[15:38:41] TOOL: bash
+ARGS:
+  command: grep -n "downloadPDF\|markInvoicePaid" ./lib/invfoxapi.php
+RESULT:
+225:  public function downloadPDF($id, $extid, $path, $res='invoice-sent', $hstyle='', $lang='si') {
+432:  public function markInvoicePaid($id, $payment_method) {
+455:  public function markInvoicePaid2($invid, $payment_method) {
+
+---
+
+[15:38:43] TOOL: read
+ARGS:
+  path: ./lib/invfoxapi.php
+  offset: 225
+  limit: 100
+RESULT:
+  public function downloadPDF($id, $extid, $path, $res='invoice-sent', $hstyle='', $lang='si') {
+    // Set document title based on resource type
+    $title = "Račun%20št.";
+    if ($res == "preinvoice") {
+      $title = "Predračun%20št.";
+    } else if ($res == "transfer") {
+      $title = "Dobavnica%20št.";
+    }
+    
+    // Determine prefix for filename
+    $prefix = "racun";
+    switch($res) {
+      case "invoice-sent":
+        $prefix = "racun";
+        break;
+      case "preinvoice":
+        $prefix = "predracun";
+        break;
+      case "transfer":
+        $prefix = "dobavnica";
+        break;
+    }
+    
+    $lang = strtolower(substr((string) $lang, 0, 2));
+    if (empty($lang)) {
+      $lang = 'si';
+    }
+
+    $url = "https://{$this->api->getDomain()}/API-pdf?id=$id&extid=$extid&res={$res}&format=PDF&doctitle={$title}&lang={$lang}&hstyle={$hstyle}";
+    $userAgent = 'CebelcaBIZ-WooCommerce/' . (defined('WOOCOMM_INVFOX_VERSION') ? WOOCOMM_INVFOX_VERSION : 'unknown') . ' (
+...[truncated 2839 chars]
+---
+
+[15:38:46] TOOL: read
+ARGS:
+  path: ./lib/invfoxapi.php
+  offset: 325
+  limit: 100
+RESULT:
+      $savedSize = file_exists($file) ? (int) filesize($file) : 0;
+      if ($savedSize <= 0) {
+        woocomm_invfox__trace("Saved PDF file is empty: $file", "ERROR");
+        @unlink($file);
+        return false;
+      }
+
+      woocomm_invfox__trace("PDF saved successfully to {$file} ({$savedSize} bytes)", "PDF RESPONSE");
+      return $file;
+    } else {
+      // Fallback to file_get_contents
+      $opts = array(
+        'http' => array(
+          'method' => "GET",
+          'header' => "Authorization: Basic " . base64_encode($this->api->getApiToken() . ':x') . "\r\n" .
+                      "User-Agent: " . $userAgent . "\r\n" .
+                      "Accept: application/pdf,application/octet-stream;q=0.9,*/*;q=0.8\r\n",
+          'timeout' => 60,
+          'ignore_errors' => true
+        )
+      );
+
+      $context = stream_context_create($opts);
+
+      woocomm_invfox__trace("Downloading PDF from: $url", "DOWNLOADING PDF");
+
+      $data = @file_get_contents($url, false, $context)
+...[truncated 2877 chars]
+---
+
+[15:38:49] TOOL: read
+ARGS:
+  limit: 50
+  path: ./lib/invfoxapi.php
+  offset: 432
+RESULT:
+  public function markInvoicePaid($id, $payment_method) {
+    $res = $this->api->call('invoice-sent-p', 'mark-paid-2', array(
+      'id_invoice_sent_ext' => $id, 
+      'date_of' => date("Y-m-d"), 
+      'amount' => 0, 
+      'payment_method' => $payment_method, 
+      'id_invoice_sent' => 0
+    ));
+    
+    if ($res->isErr()) {
+      woocomm_invfox__trace("Failed to mark invoice as paid: " . print_r($res->getErr(), true), "ERROR");
+    }
+    
+    return $res;
+  }
+  
+  /**
+   * Mark an invoice as paid by invoice ID
+   * 
+   * @param int $invid Invoice ID
+   * @param string $payment_method Payment method
+   * @return StrpcRes API response
+   */
+  public function markInvoicePaid2($invid, $payment_method) {
+    $res = $this->api->call('invoice-sent-p', 'mark-paid-2', array(
+      'id_invoice_sent_ext' => 0, 
+      'date_of' => date("Y-m-d"), 
+      'amount' => 0, 
+      'payment_method' => $payment_method, 
+      'id_invoice_sent' => $invid
+    ));
+    
+    if ($res->isErr()) {
+      wooc
+...[truncated 523 chars]
+---
+
+[15:38:52] TOOL: read
+ARGS:
+  path: ./includes/class-wc-integration-cebelcabiz.php
+  limit: 200
+RESULT:
+<?php
+/**
+ * Cebelca BIZ Plugin.
+ *
+ * @package  WC_Integration_Cebelcabiz
+ * @category Integration
+ * @author   Janko M.
+ */
+if ( ! class_exists( 'WC_Integration_Cebelcabiz' ) && class_exists( 'WC_Integration' ) ) :
+
+    class WC_Integration_Cebelcabiz extends WC_Integration {
+
+        /**
+         * Integration properties
+         */
+        public $api_key;
+        public $api_domain;
+        public $app_name;
+        public $use_shop_id_for_docnum;
+        public $add_sku_to_line;
+        public $proforma_days_valid;
+        public $customer_general_payment_period;
+        public $add_post_content_in_item_descr;
+        public $partial_sum_label;
+        public $order_num_label;
+        public $invoice_language;
+        public $round_calculated_taxrate_to;
+        public $round_calculated_netprice_to;
+        public $round_calculated_shipping_taxrate_to;
+        public $from_warehouse_id;
+        public $debug;
+        public $debug_mode;
+        public $order_actions_enabled;
+    
+...[truncated 9106 chars]
+---
+
+[15:38:56] TOOL: bash
+ARGS:
+  command: grep -A 10 -B 10 "payment_methods_map\|Payment.*method\|payment.*method" ./includes/class-wc-integration-cebelcabiz.php
+RESULT:
+        public $order_actions_enabled;
+        public $on_order_on_hold;
+        public $on_order_processing;
+        public $on_order_completed;
+        public $fiscal_mode;
+        public $fiscal_test_mode;
+        public $fiscal_id_location;
+        public $fiscal_op_tax_id;
+        public $fiscal_op_name;
+        public $vat_levels_list;
+        public $payment_methods_map;
+        public $fiscalize_payment_methods;
+		
+        /**
+         * Init and hook in the integration.
+         */
+		
+        public function __construct() 
+        {
+            global $woocommerce;
+            $this->id                 = 'cebelcabiz';
+            $this->method_title       = __( 'Čebelca BIZ', 'cebelcabiz' );
+--
+            $this->order_actions_enabled = $this->get_option( 'order_actions_enabled' );
+            $this->on_order_on_hold = $this->get_option( 'on_order_on_hold' );
+            $this->on_order_processing = $this->get_option( 'on_order_processing' );
+            $this->on_order_compl
+...[truncated 4330 chars]
+---
+
+[15:39:02] TOOL: bash
+ARGS:
+  command: grep -n -i "stripe\|payment.*id\|method.*id" ./includes/class-wc-integration-cebelcabiz.php
+RESULT:
+
+
+Command exited with error: exit status 1
+---
+
+[15:39:06] TOOL: bash
+ARGS:
+  command: grep -n -i "stripe\|payment.*id\|method.*id" *.php
+RESULT:
+cebelcabiz-improved.php:562:              woocomm_invfox__trace("Include payment: " . (strpos($this->conf['on_order_completed'], "_paid_") !== false ? "Yes" : "No"), "Config");
+cebelcabiz.original.php:482:						// 'payment'         => "paid"
+cebelcabiz.original.php:504:						// 'payment'         => "paid"
+cebelcabiz.php:476:				woocomm_invfox__trace("Processing payment method title: " . $currentPM . " / ID: " . $currentPM_id, "Payment");
+cebelcabiz.php:480:				if ( $payment_method == -2 && ! empty( $currentPM_id ) ) {
+cebelcabiz.php:481:					woocomm_invfox__trace("Title lookup failed, trying payment method ID: " . $currentPM_id, "Payment");
+cebelcabiz.php:482:					$payment_method = $this->mapPaymentMethods($currentPM_id, $this->conf['payment_methods_map']);
+cebelcabiz.php:584:                woocomm_invfox__trace("Include payment: " . (strpos($this->conf['on_order_completed'], "_paid_") !== false ? "Yes" : "No"), "Config");
+cebelcabiz.php:840:					// 'payment'         => "paid"
+cebelca
+...[truncated 507 chars]
+---
+
+[15:39:09] TOOL: bash
+ARGS:
+  command: grep -n -A 10 -B 5 "create_custom_endpoint\|rest_api" *.php
+RESULT:
+cebelcabiz-improved.php-118-			add_action('woocommerce_order_status_on-hold', array($this, '_woocommerce_order_status_on_hold'));
+cebelcabiz-improved.php-119-			add_action('woocommerce_order_status_processing', array($this, '_woocommerce_order_status_processing'));
+cebelcabiz-improved.php-120-			add_action('woocommerce_order_status_completed', array($this, '_woocommerce_order_status_completed'));
+cebelcabiz-improved.php-121-
+cebelcabiz-improved.php-122-			// REST API endpoint
+cebelcabiz-improved.php:123:            add_action('rest_api_init', 'create_custom_endpoint');
+cebelcabiz-improved.php-124-            
+cebelcabiz-improved.php-125-			// Email attachment hook
+cebelcabiz-improved.php-126-			add_filter('woocommerce_email_attachments', array($this, '_attach_invoice_pdf_to_email'), 10, 3);
+cebelcabiz-improved.php-127-
+cebelcabiz-improved.php-128-			// Admin notices
+cebelcabiz-improved.php-129-			add_action('admin_notices', array($this, 'admin_notices'));
+cebelcabiz-improved.php-130-
+c
+...[truncated 4736 chars]
+---
+
+[15:39:13] TOOL: bash
+ARGS:
+  command: grep -n "get_payment_method\|payment_method" ./cebelcabiz.php | head -10
+RESULT:
+92:			'payment_methods_map' => 'PayPal->PayPal;Gotovina->Gotovina',
+93:			'fiscalize_payment_methods' => '* - vsi',
+474:				$currentPM       = sanitize_text_field($order->get_payment_method_title());
+475:			$currentPM_id    = sanitize_text_field($order->get_payment_method());
+477:				woocomm_invfox__trace("Payment methods map: " . $this->conf['payment_methods_map'], "Payment");
+479:				$payment_method = $this->mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+480:				if ( $payment_method == -2 && ! empty( $currentPM_id ) ) {
+482:					$payment_method = $this->mapPaymentMethods($currentPM_id, $this->conf['payment_methods_map']);
+484:				woocomm_invfox__trace("Mapped payment method: " . $payment_method, "Payment");
+486:				if ($payment_method == -2) {
+
+---
+
+[15:40:00] TOOL: write
+ARGS:
+  path: ./ANALYSIS_REPORT.md
+  content: # Cebelca BIZ WooCommerce Plugin - Bug Analysis Report
+
+## Overview
+Analyzed the Cebelca BIZ WooCommerce plugin v0.8.9 for bugs and issues, particularly around PDF downloads and payment method handling.
+
+## Critical Issues Found
+
+### 1. **Payment Method Mapping Issues**
+
+#### Problem:
+The payment method mapping system has several limitations and potential failure points:
+
+**Current Implementation:**
+- Uses both `get_payment_method_title()` (human-readable name) and `get_payment_method()` (gateway ID)
+- Falls back to ID if title mapping fails
+- Mapping format: `"Title->CebelcaMethod;Title2->Method2"`
+
+**Issues:**
+1. **Payment method titles can be localized/customized** - A Stripe payment might show as "Credit Card", "Kreditna kartica", or custom text depending on language/settings
+2. **No clear guidance for users** on how to find payment method IDs
+3. **Case sensitivity** in mapping (though the code handles exact matches only)
+4. **Limited error messaging** when mapping fails
+
+**Location in code:**
+```php
+// cebelcabiz.php lines 474-485
+$currentPM = sanitize_text_field($order->get_payment_method_title());
+$currentPM_id = sanitize_text_field($order->get_payment_method());
+$payment_method = $this->mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+if ( $payment_method == -2 && ! empty( $currentPM_id ) ) {
+    $payment_method = $this->mapPaymentMethods($currentPM_id, $this->conf['payment_methods_map']);
+}
+```
+
+### 2. **PDF Download Vulnerabilities and Issues**
+
+#### Problem 1: Directory Security
+**Location:** `cebelcabiz.php` lines 1180-1200
+```php
+if (!is_dir($upload_path)) {
+    $dir_created = wp_mkdir_p($upload_path);
+    // Sets 0755 permissions but no .htaccess protection
+}
+```
+
+**Issues:**
+- **No .htaccess protection** for the `/wp-content/uploads/invoices/` directory
+- PDFs are directly accessible via URL if someone guesses the filename
+- **Privacy/GDPR issue**: Customer invoice data exposed
+
+#### Problem 2: PDF Download Error Handling
+**Location:** `lib/invfoxapi.php` lines 225-400
+
+**Issues:**
+1. **Insufficient error checking** for API responses
+2. **No retry mechanism** on failed downloads
+3. **Inadequate WAF/ModSecurity detection** (only checks basic response format)
+4. **Missing file cleanup** on partial failures
+
+#### Problem 3: PDF Validation Issues
+```php
+// Only checks for %PDF- signature but not PDF validity
+if (strpos($trimmedStart, '%PDF-') !== 0) {
+    // Error handling
+}
+```
+
+**Issues:**
+- Doesn't validate if PDF is actually readable/valid
+- Could save corrupted PDF files
+
+### 3. **Payment Method ID Discovery Issues**
+
+#### Problem:
+Users have no clear way to discover payment method IDs for mapping.
+
+**For Stripe specifically:**
+- Payment method ID is typically `stripe` 
+- But could be `stripe_cc`, `stripe_sepa`, etc. depending on setup
+- Title varies: "Credit Card", "Stripe", "Credit card (Stripe)", etc.
+
+#### Current User Guidance:
+The plugin only provides this description:
+> "Tu v obliki "Način plačila woocommerce->Način plačila Čebelca;...." vnesete kako se naj načini plačila v vašem Woocommerce pretvorijo v načina plačila na Čebelci"
+
+**Missing:**
+- How to find payment method IDs
+- Examples for common gateways
+- Debugging tools to see what values are being used
+
+## Minor Issues
+
+### 4. **Inconsistent Function Calls**
+**Location:** `cebelcabiz.php` line 928, 931
+```php
+$payment_method = mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+// Should be:
+$payment_method = $this->mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+```
+
+This calls global function instead of class method, though both exist.
+
+### 5. **Debug Logging Inconsistency**
+Some API calls disable debug hook:
+```php
+$api = new InvfoxAPI( $this->conf['api_key'], $this->conf['api_domain'], true );
+// $api->setDebugHook( "woocomm_invfox__trace" ); // Commented out
+```
+
+### 6. **VAT Calculation Edge Cases**
+The `calculatePreciseSloVAT()` function may fail with certain VAT configurations, leading to document creation failures.
+
+## Security Issues
+
+### 7. **PDF Directory Access**
+- PDFs stored in `/wp-content/uploads/invoices/` without access protection
+- Filenames are predictable: `{prefix}_{id}_{extid}_{rand}.pdf`
+- No authentication required to access PDFs
+
+### 8. **Input Validation**
+- Payment method mapping accepts unsanitized input in admin settings
+- Some API parameters lack proper sanitization
+
+## Recommendations
+
+### 1. **Improve Payment Method Mapping**
+
+**Add debug functionality:**
+```php
+// Add to admin interface
+public function show_payment_methods_debug() {
+    $available_gateways = WC()->payment_gateways->payment_gateways();
+    echo '<h3>Available Payment Methods:</h3>';
+    foreach($available_gateways as $id => $gateway) {
+        echo "ID: {$id} | Title: {$gateway->title}<br>";
+    }
+}
+```
+
+**Better user guidance:**
+- Add examples for common payment methods (Stripe, PayPal, etc.)
+- Show current order payment methods in debug log
+- Add validation for mapping format
+
+### 2. **Secure PDF Storage**
+```php
+// Add .htaccess to invoices directory
+private function secure_invoices_directory($path) {
+    $htaccess_content = "Order Deny,Allow\nDeny from all\n";
+    file_put_contents($path . '/.htaccess', $htaccess_content);
+}
+```
+
+**Alternative:** Store PDFs outside web root or implement download authentication.
+
+### 3. **Enhanced PDF Validation**
+```php
+// Add PDF integrity check
+private function validate_pdf_file($filepath) {
+    if (!file_exists($filepath)) return false;
+    
+    $fileContent = file_get_contents($filepath, false, null, 0, 1024);
+    if (strpos($fileContent, '%PDF-') !== 0) return false;
+    
+    // Check for PDF trailer
+    $endContent = file_get_contents($filepath, false, null, -1024);
+    if (strpos($endContent, '%%EOF') === false) return false;
+    
+    return true;
+}
+```
+
+### 4. **Payment Method ID Discovery**
+
+**Add to admin settings:**
+```php
+// Show payment methods for easier mapping
+private function render_payment_methods_helper() {
+    echo '<div class="payment-methods-helper">';
+    echo '<h4>Discovered Payment Methods:</h4>';
+    echo '<p><strong>Recent orders payment methods:</strong></p>';
+    
+    $orders = wc_get_orders(array('limit' => 20));
+    $methods_found = array();
+    
+    foreach($orders as $order) {
+        $method_id = $order->get_payment_method();
+        $method_title = $order->get_payment_method_title();
+        if (!isset($methods_found[$method_id])) {
+            $methods_found[$method_id] = $method_title;
+        }
+    }
+    
+    foreach($methods_found as $id => $title) {
+        echo "<code>{$id}</code> → {$title}<br>";
+    }
+    echo '</div>';
+}
+```
+
+### 5. **Common Payment Method Examples**
+Add to plugin documentation:
+```
+Common Payment Method Mappings:
+- Stripe: "stripe->Kreditna kartica" or "Credit Card->Kreditna kartica"  
+- PayPal: "paypal->PayPal" or "PayPal->PayPal"
+- Bank Transfer: "bacs->Bančno nakazilo"
+- Cash on Delivery: "cod->Gotovina ob dostavi"
+```
+
+## Conclusion
+
+The plugin has several important issues that should be addressed:
+
+1. **High Priority**: Secure PDF storage and implement proper access controls
+2. **High Priority**: Better payment method mapping guidance and debugging tools  
+3. **Medium Priority**: Fix function call inconsistencies
+4. **Medium Priority**: Improve PDF validation and error handling
+5. **Low Priority**: Enhanced debug logging consistency
+
+The payment method mapping system works but needs better user experience and documentation. The PDF download functionality has security and reliability issues that should be addressed promptly.
+RESULT:
+Successfully wrote 7614 bytes to ./ANALYSIS_REPORT.md
+---
+

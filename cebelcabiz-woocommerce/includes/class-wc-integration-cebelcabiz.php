@@ -162,105 +162,6 @@ if ( ! class_exists( 'WC_Integration_Cebelcabiz' ) && class_exists( 'WC_Integrat
             // $ this - > get_custom_attribute_html( $data ).
             return ob_get_clean();
         }
-
-        /**
-         * Generate Payment Methods Helper HTML.
-         */
-        public function generate_payment_methods_helper_html( $key, $data ) {
-            $field    = $this->plugin_id . $this->id . '_' . $key;
-            $defaults = array(
-                'title' => '',
-                'description' => '',
-            );
-            $data = wp_parse_args( $data, $defaults );
-            ob_start();
-            ?>
-            <tr valign="top">
-                <th scope="row" class="titledesc">
-                    <label for="<?php echo esc_attr( $field ); ?>"><?php echo wp_kses_post( $data['title'] ); ?></label>
-                </th>
-                <td class="forminp">
-                    <fieldset>
-                        <div class="payment-methods-helper" style="background: #f9f9f9; border: 1px solid #ddd; padding: 15px; margin: 10px 0;">
-                            <?php $this->render_payment_methods_helper(); ?>
-                        </div>
-                        <?php if ( !empty( $data['description'] ) ) : ?>
-                            <p class="description"><?php echo wp_kses_post( $data['description'] ); ?></p>
-                        <?php endif; ?>
-                    </fieldset>
-                </td>
-            </tr>
-            <?php
-            return ob_get_clean();
-        }
-
-        /**
-         * Render payment methods discovery helper
-         */
-        private function render_payment_methods_helper() {
-            echo '<h4>' . __('Odkrivanje načinov plačila', 'woocommerce-integration-demo') . ':</h4>';
-            
-            // Show available payment gateways
-            echo '<div style="margin-bottom: 15px;">';
-            echo '<h5>' . __('Razpoložljivi načini plačila (WooCommerce gateways):', 'woocommerce-integration-demo') . '</h5>';
-            if (class_exists('WC')) {
-                $available_gateways = WC()->payment_gateways->payment_gateways();
-                if (!empty($available_gateways)) {
-                    foreach($available_gateways as $id => $gateway) {
-                        $enabled_status = $gateway->enabled === 'yes' ? __('(vklopljen)', 'woocommerce-integration-demo') : __('(izklopljen)', 'woocommerce-integration-demo');
-                        echo '<div style="margin: 5px 0; font-family: monospace;">';
-                        echo '<strong>ID:</strong> <code>' . esc_html($id) . '</code> | ';
-                        echo '<strong>Naziv:</strong> ' . esc_html($gateway->title) . ' ' . esc_html($enabled_status);
-                        echo '</div>';
-                    }
-                } else {
-                    echo '<p>' . __('Ni najdenih načinov plačila.', 'woocommerce-integration-demo') . '</p>';
-                }
-            } else {
-                echo '<p>' . __('WooCommerce ni naložen.', 'woocommerce-integration-demo') . '</p>';
-            }
-            echo '</div>';
-            
-            // Show payment methods from recent orders
-            echo '<div>';
-            echo '<h5>' . __('Načini plačila iz zadnjih naročil:', 'woocommerce-integration-demo') . '</h5>';
-            if (function_exists('wc_get_orders')) {
-                $orders = wc_get_orders(array('limit' => 50, 'status' => array('wc-processing', 'wc-completed')));
-                $methods_found = array();
-                
-                foreach($orders as $order) {
-                    $method_id = $order->get_payment_method();
-                    $method_title = $order->get_payment_method_title();
-                    if (!empty($method_id) && !isset($methods_found[$method_id])) {
-                        $methods_found[$method_id] = $method_title;
-                    }
-                }
-                
-                if (!empty($methods_found)) {
-                    foreach($methods_found as $id => $title) {
-                        echo '<div style="margin: 5px 0; font-family: monospace;">';
-                        echo '<strong>ID:</strong> <code>' . esc_html($id) . '</code> | ';
-                        echo '<strong>Naziv:</strong> ' . esc_html($title);
-                        echo '</div>';
-                    }
-                } else {
-                    echo '<p>' . __('Ni najdenih načinov plačila v zadnjih naročilih.', 'woocommerce-integration-demo') . '</p>';
-                }
-            }
-            echo '</div>';
-            
-            // Show mapping examples
-            echo '<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">';
-            echo '<h5>' . __('Primeri pretvorbe načinov plačila:', 'woocommerce-integration-demo') . '</h5>';
-            echo '<div style="font-family: monospace; font-size: 13px; line-height: 1.8;">';
-            echo '<div><strong>Stripe:</strong> <code>stripe->Kreditna kartica</code></div>';
-            echo '<div><strong>PayPal:</strong> <code>paypal->PayPal</code></div>';
-            echo '<div><strong>Bančno nakazilo:</strong> <code>bacs->Bančno nakazilo</code></div>';
-            echo '<div><strong>Gotovina ob dostavi:</strong> <code>cod->Gotovina ob dostavi</code></div>';
-            echo '<div><strong>Kombinirano:</strong> <code>stripe->Kreditna kartica;paypal->PayPal;bacs->Bančno nakazilo</code></div>';
-            echo '</div>';
-            echo '</div>';
-        }
 		
         public function init_form_fields() 
         {
@@ -291,12 +192,6 @@ if ( ! class_exists( 'WC_Integration_Cebelcabiz' ) && class_exists( 'WC_Integrat
                     'type'              => 'text',
                     'default'           => '',
                     'description'       => __( 'Tu v obliki "Način plačila woocomerce->Način plačila Čebelca;...." vnesete kako se naj načini plačila v vašem Woocommerce pretvorijo v načina plačila na Čebelci', 'woocommerce-integration-demo' ),
-                ),
-
-                'payment_methods_helper' => array(
-                    'title'             => __( 'Odkrivanje načinov plačila', 'woocommerce-integration-demo' ),
-                    'type'              => 'payment_methods_helper',
-                    'description'       => __( 'Pregled najdenih načinov plačila v vaši trgovini za lažje nastavljanje pretvorbe.', 'woocommerce-integration-demo' ),
                 ),
 
 

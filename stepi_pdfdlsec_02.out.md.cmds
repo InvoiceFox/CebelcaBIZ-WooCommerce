@@ -1,0 +1,383 @@
+# Tool Commands Log - stepi_pdfdlsec_02.out.md
+# Started at 2026-04-09 15:50:17
+
+[15:50:19] TOOL: read
+ARGS:
+  path: ANALYSIS_REPORT_edited.md
+RESULT:
+## Recommendations
+
+### 1. **Improve Payment Method Mapping**
+
+**Add debug functionality:**
+```php
+// Add to admin interface
+public function show_payment_methods_debug() {
+    $available_gateways = WC()->payment_gateways->payment_gateways();
+    echo '<h3>Available Payment Methods:</h3>';
+    foreach($available_gateways as $id => $gateway) {
+        echo "ID: {$id} | Title: {$gateway->title}<br>";
+    }
+}
+```
+
+**Better user guidance:**
+- Add examples for common payment methods (Stripe, PayPal, etc.)
+- Show current order payment methods in debug log
+- Add validation for mapping format
+
+### 2. **Secure PDF Storage**
+```php
+// Add .htaccess to invoices directory
+private function secure_invoices_directory($path) {
+    $htaccess_content = "Order Deny,Allow\nDeny from all\n";
+    file_put_contents($path . '/.htaccess', $htaccess_content);
+}
+```
+
+**Alternative:** Store PDFs outside web root or implement download authentication.
+
+### 3. **Enhanced PDF Validation**
+```php
+// Add PDF integrity c
+...[truncated 1575 chars]
+---
+
+[15:50:21] TOOL: bash
+ARGS:
+  command: find . -name "*.php" -type f | head -20
+RESULT:
+./lib/invfoxapi.php
+./lib/pulp/Format.php
+./lib/strpcapi.php
+./cebelcabiz.original.php
+./includes/class-wc-cebelcabiz-log-viewer.php
+./includes/class-wc-integration-cebelcabiz.php
+./cebelcabiz.php
+./cebelcabiz-improved.php
+./cebelcabiz-woocommerce/lib/invfoxapi.php
+./cebelcabiz-woocommerce/lib/pulp/Format.php
+./cebelcabiz-woocommerce/lib/strpcapi.php
+./cebelcabiz-woocommerce/includes/class-wc-cebelcabiz-log-viewer.php
+./cebelcabiz-woocommerce/includes/class-wc-integration-cebelcabiz.php
+./cebelcabiz-woocommerce/cebelcabiz.php
+./update_invt.php
+
+---
+
+[15:50:23] TOOL: read
+ARGS:
+  path: cebelcabiz.php
+RESULT:
+<?php
+/**
+ * Plugin Name: Cebelca BIZ
+ * Plugin URI:
+ * Description: Connects WooCommerce to Cebelca.biz for invoicing and optionally inventory
+ * Version: 0.8.9
+ * Author: JankoM
+ * Author URI: https://github.com/refaktor/
+ * Developer: Janko M.
+ * Developer URI: https://github.com/refaktor/
+ * Text Domain: woocommerce-cebelcabiz
+ * Domain Path: /languages
+ *
+ */
+
+// Status: Stable
+
+if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
+
+    // Constants for plugin configuration
+    define("WOOCOMM_INVFOX_LOG_FILE", WP_CONTENT_DIR . '/cebelcabiz-debug.log');
+    define("WOOCOMM_INVFOX_VERSION", '0.8.0');
+    
+    // Debug mode will be set based on settings
+    $debug_enabled = false;
+    $settings = get_option('woocommerce_cebelcabiz_settings');
+    if (isset($settings['debug_mode']) && $settings['debug_mode'] === 'yes') {
+        $debug_enabled = true;
+    }
+    define("WOOCOMM_INVFOX_DEBUG", $debug_enabled);
+    
+    /**
+     * Debug logging function
+     * 
+     * @param mixed $x The data to l
+...[truncated 50215 chars]
+---
+
+[15:50:27] TOOL: read
+ARGS:
+  path: includes/class-wc-integration-cebelcabiz.php
+  limit: 100
+RESULT:
+<?php
+/**
+ * Cebelca BIZ Plugin.
+ *
+ * @package  WC_Integration_Cebelcabiz
+ * @category Integration
+ * @author   Janko M.
+ */
+if ( ! class_exists( 'WC_Integration_Cebelcabiz' ) && class_exists( 'WC_Integration' ) ) :
+
+    class WC_Integration_Cebelcabiz extends WC_Integration {
+
+        /**
+         * Integration properties
+         */
+        public $api_key;
+        public $api_domain;
+        public $app_name;
+        public $use_shop_id_for_docnum;
+        public $add_sku_to_line;
+        public $proforma_days_valid;
+        public $customer_general_payment_period;
+        public $add_post_content_in_item_descr;
+        public $partial_sum_label;
+        public $order_num_label;
+        public $invoice_language;
+        public $round_calculated_taxrate_to;
+        public $round_calculated_netprice_to;
+        public $round_calculated_shipping_taxrate_to;
+        public $from_warehouse_id;
+        public $debug;
+        public $debug_mode;
+        public $order_actions_enabled;
+    
+...[truncated 4441 chars]
+---
+
+[15:50:30] TOOL: read
+ARGS:
+  path: includes/class-wc-integration-cebelcabiz.php
+  offset: 100
+  limit: 200
+RESULT:
+         * Enqueue admin scripts and styles for the tabbed interface
+         */
+        public function enqueue_admin_scripts() {
+            // Only enqueue on the WooCommerce settings page for our integration
+            if ( isset( $_GET['page'] ) && $_GET['page'] === 'wc-settings' && 
+                 isset( $_GET['tab'] ) && $_GET['tab'] === 'integration' && 
+                 isset( $_GET['section'] ) && $_GET['section'] === 'cebelcabiz' ) {
+            
+                // Enqueue the JavaScript for tabs
+                wp_enqueue_script(
+                    'cebelcabiz-admin-tabs',
+                    plugins_url( 'assets/js/admin-tabs.js', dirname( __FILE__ ) ),
+                    array( 'jquery' ),
+                    '1.0.0',
+                    true
+                );
+            
+                // Enqueue the CSS for tabs
+                wp_enqueue_style(
+                    'cebelcabiz-admin-tabs',
+                    plugins_url( 'assets/css/admin-tabs.css', dirname( __
+...[truncated 11071 chars]
+---
+
+[15:50:41] TOOL: edit
+ARGS:
+  path: includes/class-wc-integration-cebelcabiz.php
+  oldText:                 'payment_methods_map' => array(
+                    'title'             => __( 'Pretvorba načinov plačila', 'woocommerce-integration-demo' ),
+                    'type'              => 'text',
+                    'default'           => '',
+                    'description'       => __( 'Tu v obliki "Način plačila woocomerce->Način plačila Čebelca;...." vnesete kako se naj načini plačila v vašem Woocommerce pretvorijo v načina plačila na Čebelci', 'woocommerce-integration-demo' ),
+                ),
+  newText:                 'payment_methods_map' => array(
+                    'title'             => __( 'Pretvorba načinov plačila', 'woocommerce-integration-demo' ),
+                    'type'              => 'text',
+                    'default'           => '',
+                    'description'       => __( 'Tu v obliki "Način plačila woocomerce->Način plačila Čebelca;...." vnesete kako se naj načini plačila v vašem Woocommerce pretvorijo v načina plačila na Čebelci', 'woocommerce-integration-demo' ),
+                ),
+
+                'payment_methods_helper' => array(
+                    'title'             => __( 'Odkrivanje načinov plačila', 'woocommerce-integration-demo' ),
+                    'type'              => 'payment_methods_helper',
+                    'description'       => __( 'Pregled najdenih načinov plačila v vaši trgovini za lažje nastavljanje pretvorbe.', 'woocommerce-integration-demo' ),
+                ),
+RESULT:
+Successfully replaced text in includes/class-wc-integration-cebelcabiz.php
+---
+
+[15:50:44] TOOL: read
+ARGS:
+  path: includes/class-wc-integration-cebelcabiz.php
+  offset: 180
+  limit: 100
+RESULT:
+                    'default'           => ''
+                ),
+          
+                'vat_levels_list' => array(
+                    'title'             => __( 'Možne davčne stopnje', 'woocommerce-integration-demo' ),
+                    'type'              => 'text',
+                    'default'           => '',
+                    'description'       => __( 'Tu v obliki seznama kjer so vrednosti ločene z vejico, decimalka pa uporablja piko naštejete vse davčne stopnje, ki so možne v vaši trgovini.', 'woocommerce-integration-demo' ),
+                ),
+        
+                'payment_methods_map' => array(
+                    'title'             => __( 'Pretvorba načinov plačila', 'woocommerce-integration-demo' ),
+                    'type'              => 'text',
+                    'default'           => '',
+                    'description'       => __( 'Tu v obliki "Način plačila woocomerce->Način plačila Čebelca;...." vnesete kako se naj načini plačila v
+...[truncated 6090 chars]
+---
+
+[15:50:47] TOOL: bash
+ARGS:
+  command: grep -n "generate_.*_html" includes/class-wc-integration-cebelcabiz.php
+RESULT:
+135:        public function generate_button_html( $key, $data ) {
+
+---
+
+[15:50:50] TOOL: read
+ARGS:
+  path: includes/class-wc-integration-cebelcabiz.php
+  offset: 135
+  limit: 50
+RESULT:
+        public function generate_button_html( $key, $data ) {
+            $field    = $this->plugin_id . $this->id . '_' . $key;
+            $defaults = array(
+                'class' => 'button-secondary',
+                'css' => '',
+                'custom_attributes' => array(),
+                'desc_tip' => false,
+                'description' => '',
+                'title' => '',
+			);
+            $data = wp_parse_args( $data, $defaults );
+            ob_start();
+			
+            echo "<tr valign='top'>
+	    <th scope='row' class='titledesc'>
+            <label for='". esc_attr( $field ) ."'>".wp_kses_post( $data['title'] )."</label>
+            <!-- $ this - >get_tooltip_html( $data )-->
+            </th>
+            <td class='forminp'>
+	    <fieldset>
+	     <legend class='screen-reader-text'><span>".wp_kses_post( $data['title'] )."</span></legend>
+	      <button class='". esc_attr( $data['class'] ). "' type='button' name='". esc_attr( $field ) ."' id='". esc_attr( $field ) ."' 
+...[truncated 1383 chars]
+---
+
+[15:51:11] TOOL: edit
+ARGS:
+  newText:             return ob_get_clean();
+        }
+
+        /**
+         * Generate Payment Methods Helper HTML.
+         */
+        public function generate_payment_methods_helper_html( $key, $data ) {
+            $field    = $this->plugin_id . $this->id . '_' . $key;
+            $defaults = array(
+                'title' => '',
+                'description' => '',
+            );
+            $data = wp_parse_args( $data, $defaults );
+            ob_start();
+            ?>
+            <tr valign="top">
+                <th scope="row" class="titledesc">
+                    <label for="<?php echo esc_attr( $field ); ?>"><?php echo wp_kses_post( $data['title'] ); ?></label>
+                </th>
+                <td class="forminp">
+                    <fieldset>
+                        <div class="payment-methods-helper" style="background: #f9f9f9; border: 1px solid #ddd; padding: 15px; margin: 10px 0;">
+                            <?php $this->render_payment_methods_helper(); ?>
+                        </div>
+                        <?php if ( !empty( $data['description'] ) ) : ?>
+                            <p class="description"><?php echo wp_kses_post( $data['description'] ); ?></p>
+                        <?php endif; ?>
+                    </fieldset>
+                </td>
+            </tr>
+            <?php
+            return ob_get_clean();
+        }
+
+        /**
+         * Render payment methods discovery helper
+         */
+        private function render_payment_methods_helper() {
+            echo '<h4>' . __('Odkrivanje načinov plačila', 'woocommerce-integration-demo') . ':</h4>';
+            
+            // Show available payment gateways
+            echo '<div style="margin-bottom: 15px;">';
+            echo '<h5>' . __('Razpoložljivi načini plačila (WooCommerce gateways):', 'woocommerce-integration-demo') . '</h5>';
+            if (class_exists('WC')) {
+                $available_gateways = WC()->payment_gateways->payment_gateways();
+                if (!empty($available_gateways)) {
+                    foreach($available_gateways as $id => $gateway) {
+                        $enabled_status = $gateway->enabled === 'yes' ? __('(vklopljen)', 'woocommerce-integration-demo') : __('(izklopljen)', 'woocommerce-integration-demo');
+                        echo '<div style="margin: 5px 0; font-family: monospace;">';
+                        echo '<strong>ID:</strong> <code>' . esc_html($id) . '</code> | ';
+                        echo '<strong>Naziv:</strong> ' . esc_html($gateway->title) . ' ' . esc_html($enabled_status);
+                        echo '</div>';
+                    }
+                } else {
+                    echo '<p>' . __('Ni najdenih načinov plačila.', 'woocommerce-integration-demo') . '</p>';
+                }
+            } else {
+                echo '<p>' . __('WooCommerce ni naložen.', 'woocommerce-integration-demo') . '</p>';
+            }
+            echo '</div>';
+            
+            // Show payment methods from recent orders
+            echo '<div>';
+            echo '<h5>' . __('Načini plačila iz zadnjih naročil:', 'woocommerce-integration-demo') . '</h5>';
+            if (function_exists('wc_get_orders')) {
+                $orders = wc_get_orders(array('limit' => 50, 'status' => array('wc-processing', 'wc-completed')));
+                $methods_found = array();
+                
+                foreach($orders as $order) {
+                    $method_id = $order->get_payment_method();
+                    $method_title = $order->get_payment_method_title();
+                    if (!empty($method_id) && !isset($methods_found[$method_id])) {
+                        $methods_found[$method_id] = $method_title;
+                    }
+                }
+                
+                if (!empty($methods_found)) {
+                    foreach($methods_found as $id => $title) {
+                        echo '<div style="margin: 5px 0; font-family: monospace;">';
+                        echo '<strong>ID:</strong> <code>' . esc_html($id) . '</code> | ';
+                        echo '<strong>Naziv:</strong> ' . esc_html($title);
+                        echo '</div>';
+                    }
+                } else {
+                    echo '<p>' . __('Ni najdenih načinov plačila v zadnjih naročilih.', 'woocommerce-integration-demo') . '</p>';
+                }
+            }
+            echo '</div>';
+            
+            // Show mapping examples
+            echo '<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">';
+            echo '<h5>' . __('Primeri pretvorbe načinov plačila:', 'woocommerce-integration-demo') . '</h5>';
+            echo '<div style="font-family: monospace; font-size: 13px; line-height: 1.8;">';
+            echo '<div><strong>Stripe:</strong> <code>stripe->Kreditna kartica</code></div>';
+            echo '<div><strong>PayPal:</strong> <code>paypal->PayPal</code></div>';
+            echo '<div><strong>Bančno nakazilo:</strong> <code>bacs->Bančno nakazilo</code></div>';
+            echo '<div><strong>Gotovina ob dostavi:</strong> <code>cod->Gotovina ob dostavi</code></div>';
+            echo '<div><strong>Kombinirano:</strong> <code>stripe->Kreditna kartica;paypal->PayPal;bacs->Bančno nakazilo</code></div>';
+            echo '</div>';
+            echo '</div>';
+        }
+		
+        public function init_form_fields()
+  path: includes/class-wc-integration-cebelcabiz.php
+  oldText:             return ob_get_clean();
+        }
+		
+        public function init_form_fields()
+RESULT:
+Successfully replaced text in includes/class-wc-integration-cebelcabiz.php
+---
+

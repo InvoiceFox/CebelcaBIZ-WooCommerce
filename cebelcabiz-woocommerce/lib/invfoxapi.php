@@ -1,0 +1,634 @@
+<?php
+/**
+ * InvfoxAPI - High-level API client for Cebelca BIZ service
+ * 
+ * This class provides methods for interacting with the Cebelca BIZ API
+ */
+
+// Global response headers array for PDF downloads
+$responseHeaders = array();
+
+/**
+ * Generate a random string for unique filenames
+ * 
+ * @param int $length Length of the random string
+ * @return string Random string
+ */
+function generateRandomString($length = 12) {
+  $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  $randomString = '';
+  for ($i = 0; $i < $length; $i++) {
+    $randomString .= $characters[rand(0, strlen($characters) - 1)];
+  }
+  return $randomString;
+}
+
+/**
+ * Read header callback for cURL
+ * 
+ * @param resource $ch cURL handle
+ * @param string $header Header line
+ * @return int Length of the header
+ */
+function readHeader($ch, $header) {
+    if (defined('WOOCOMM_INVFOX_DEBUG') && WOOCOMM_INVFOX_DEBUG) {
+        woocomm_invfox__trace($header, "API Response Header");
+    }
+    
+    global $responseHeaders;
+    $url = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+    $responseHeaders[$url][] = $header;
+    
+    return strlen($header);
+}
+
+/**
+ * InvfoxAPI class for interacting with Cebelca BIZ API
+ */
+class InvfoxAPI {
+  /**
+   * StrpcAPI instance
+   * @var StrpcAPI
+   */
+  protected $api;
+  
+  /**
+   * Constructor
+   * 
+   * @param string $apitoken API token
+   * @param string $apidomain API domain
+   * @param bool $debugMode Debug mode flag
+   */
+  public function __construct($apitoken, $apidomain, $debugMode=false) {
+    if (empty($apitoken)) {
+      throw new Exception("API token is required");
+    }
+    
+    if (empty($apidomain)) {
+      $apidomain = "www.cebelca.biz";
+    }
+    
+    $this->api = new StrpcAPI($apitoken, $apidomain, $debugMode);
+  }
+
+  /**
+   * Set debug hook function
+   * 
+   * @param string $hook Debug hook function name
+   */
+  public function setDebugHook($hook) {
+    $this->api->debugHook = $hook;
+  }
+
+  /**
+   * Ensure partner exists, create if not
+   * 
+   * @param array $data Partner data
+   * @return StrpcRes API response
+   * @throws Exception If API call fails
+   */
+  public function assurePartner($data) {
+    woocomm_invfox__trace("Ensuring partner exists: " . (isset($data['name']) ? $data['name'] : 'Unknown'), "Partner");
+    $res = $this->api->call('partner', 'assure', $data);
+    if ($res->isErr()) {
+      woocomm_invfox__trace("Failed to assure partner: " . print_r($res->getErr(), true), "Partner Error");
+    } else {
+      woocomm_invfox__trace("Partner assured successfully", "Partner");
+    }
+    return $res;
+  }
+
+  /**
+   * Create an invoice
+   * 
+   * @param array $header Invoice header data
+   * @param array $body Invoice body data (line items)
+   * @return StrpcRes API response
+   * @throws Exception If API call fails
+   */
+  public function createInvoice($header, $body) {
+    woocomm_invfox__trace("Creating invoice with " . count($body) . " line items", "Invoice");
+    $res = $this->api->call('invoice-sent', 'insert-smart-2', $header);
+    if ($res->isErr()) {
+      woocomm_invfox__trace("Failed to create invoice: " . print_r($res->getErr(), true), "Invoice Error");
+    } else {
+      $resD = $res->getData();
+      if (!empty($resD[0]['id'])) {
+        $invoiceId = $resD[0]['id'];
+        woocomm_invfox__trace("Invoice created with ID: " . $invoiceId, "Invoice");
+        
+        $lineItemsAdded = 0;
+        foreach ($body as $index => $bl) {
+          $bl['id_invoice_sent'] = $invoiceId;
+          woocomm_invfox__trace("Adding line item " . ($index + 1) . ": " . (isset($bl['title']) ? substr($bl['title'], 0, 30) . "..." : 'Unknown'), "Invoice Line");
+          $res2 = $this->api->call('invoice-sent-b', 'insert-into', $bl);
+          if ($res2->isErr()) {
+            woocomm_invfox__trace("Failed to add line item to invoice: " . print_r($res2->getErr(), true), "Invoice Line Error");
+          } else {
+            $lineItemsAdded++;
+          }
+        }
+        woocomm_invfox__trace("Added " . $lineItemsAdded . " line items to invoice", "Invoice");
+      } else {
+        woocomm_invfox__trace("Invalid response from API: missing invoice ID", "Invoice Error");
+      }
+    }
+    return $res;
+  }
+
+  /**
+   * Create a proforma invoice
+   * 
+   * @param array $header Proforma invoice header data
+   * @param array $body Proforma invoice body data (line items)
+   * @return StrpcRes API response
+   * @throws Exception If API call fails
+   */
+  public function createProFormaInvoice($header, $body) {
+    woocomm_invfox__trace("Creating proforma invoice with " . count($body) . " line items", "Proforma");
+    $res = $this->api->call('preinvoice', 'insert-smart', $header);
+    if ($res->isErr()) {
+      woocomm_invfox__trace("Failed to create proforma invoice: " . print_r($res->getErr(), true), "Proforma Error");
+    } else {
+      $resD = $res->getData();
+      if (!empty($resD[0]['id'])) {
+        $invoiceId = $resD[0]['id'];
+        woocomm_invfox__trace("Proforma invoice created with ID: " . $invoiceId, "Proforma");
+        
+        $lineItemsAdded = 0;
+        foreach ($body as $index => $bl) {
+          $bl['id_preinvoice'] = $invoiceId;
+          woocomm_invfox__trace("Adding line item " . ($index + 1) . ": " . (isset($bl['title']) ? substr($bl['title'], 0, 30) . "..." : 'Unknown'), "Proforma Line");
+          $res2 = $this->api->call('preinvoice-b', 'insert-into', $bl);
+          if ($res2->isErr()) {
+            woocomm_invfox__trace("Failed to add line item to proforma invoice: " . print_r($res2->getErr(), true), "Proforma Line Error");
+          } else {
+            $lineItemsAdded++;
+          }
+        }
+        woocomm_invfox__trace("Added " . $lineItemsAdded . " line items to proforma invoice", "Proforma");
+      } else {
+        woocomm_invfox__trace("Invalid response from API: missing proforma invoice ID", "Proforma Error");
+      }
+    }
+    return $res;
+  }
+
+  /**
+   * Create an inventory sale
+   * 
+   * @param array $header Inventory sale header data
+   * @param array $body Inventory sale body data (line items)
+   * @return StrpcRes API response
+   * @throws Exception If API call fails
+   */
+  public function createInventorySale($header, $body) {
+    woocomm_invfox__trace("Creating inventory sale with " . count($body) . " line items", "Inventory");
+    $res = $this->api->call('transfer', 'insert-smart', $header);
+    if ($res->isErr()) {
+      woocomm_invfox__trace("Failed to create inventory sale: " . print_r($res->getErr(), true), "Inventory Error");
+    } else {
+      $resD = $res->getData();
+      if (!empty($resD[0]['id'])) {
+        $saleId = $resD[0]['id'];
+        woocomm_invfox__trace("Inventory sale created with ID: " . $saleId, "Inventory");
+        
+        $lineItemsAdded = 0;
+        foreach ($body as $index => $bl) {
+          $bl['id_transfer'] = $saleId;
+          woocomm_invfox__trace("Adding line item " . ($index + 1) . ": " . (isset($bl['title']) ? substr($bl['title'], 0, 30) . "..." : 'Unknown'), "Inventory Line");
+          $res2 = $this->api->call('transfer-b', 'insert-into', $bl);
+          if ($res2->isErr()) {
+            woocomm_invfox__trace("Failed to add line item to inventory sale: " . print_r($res2->getErr(), true), "Inventory Line Error");
+          } else {
+            $lineItemsAdded++;
+          }
+        }
+        woocomm_invfox__trace("Added " . $lineItemsAdded . " line items to inventory sale", "Inventory");
+      } else {
+        woocomm_invfox__trace("Invalid response from API: missing inventory sale ID", "Inventory Error");
+      }
+    }
+    return $res;
+  }
+
+  /**
+   * Download a PDF document
+   * 
+   * @param int $id Document ID
+   * @param int $extid External document ID
+   * @param string $path Path to save the PDF
+   * @param string $res Resource type (invoice-sent, preinvoice, transfer)
+   * @param string $hstyle Header style
+   * @return string Path to the downloaded PDF
+   */
+  public function downloadPDF($id, $extid, $path, $res='invoice-sent', $hstyle='', $lang='si') {
+    // Set document title based on resource type
+    $title = "Račun%20št.";
+    if ($res == "preinvoice") {
+      $title = "Predračun%20št.";
+    } else if ($res == "transfer") {
+      $title = "Dobavnica%20št.";
+    }
+    
+    // Determine prefix for filename
+    $prefix = "racun";
+    switch($res) {
+      case "invoice-sent":
+        $prefix = "racun";
+        break;
+      case "preinvoice":
+        $prefix = "predracun";
+        break;
+      case "transfer":
+        $prefix = "dobavnica";
+        break;
+    }
+    
+    $lang = strtolower(substr((string) $lang, 0, 2));
+    if (empty($lang)) {
+      $lang = 'si';
+    }
+
+    $url = "https://{$this->api->getDomain()}/API-pdf?id=$id&extid=$extid&res={$res}&format=PDF&doctitle={$title}&lang={$lang}&hstyle={$hstyle}";
+    $userAgent = 'CebelcaBIZ-WooCommerce/' . (defined('WOOCOMM_INVFOX_VERSION') ? WOOCOMM_INVFOX_VERSION : 'unknown') . ' (+WordPress)';
+
+    // Try to use cURL if available
+    if (function_exists('curl_init')) {
+      woocomm_invfox__trace("Downloading PDF from: $url", "DOWNLOADING PDF");
+
+      $ch = curl_init($url);
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+      curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
+      curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+      curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+      curl_setopt($ch, CURLOPT_USERAGENT, $userAgent);
+      curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        "Authorization: Basic " . base64_encode($this->api->getApiToken() . ':x'),
+        "Accept: application/pdf,application/octet-stream;q=0.9,*/*;q=0.8"
+      ));
+
+      $response = curl_exec($ch);
+      $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+      $contentType = (string) curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+
+      if ($response === false) {
+        $error = curl_error($ch);
+        curl_close($ch);
+        woocomm_invfox__trace("Error downloading PDF: $error", "ERROR");
+        return false;
+      }
+
+      curl_close($ch);
+
+      $responseLength = strlen($response);
+      woocomm_invfox__trace("PDF response meta (cURL): HTTP {$httpCode}, Content-Type '{$contentType}', Bytes {$responseLength}", "PDF RESPONSE");
+
+      if ($httpCode >= 400) {
+        woocomm_invfox__trace("Error downloading PDF: HTTP code $httpCode", "ERROR");
+        return false;
+      }
+
+      if ($responseLength <= 0) {
+        woocomm_invfox__trace("Empty PDF response body (possible Imunify360/ModSecurity interference)", "ERROR");
+        return false;
+      }
+
+      $trimmedStart = ltrim(substr($response, 0, 16));
+      if (strpos($trimmedStart, '%PDF-') !== 0) {
+        $snippet = substr($response, 0, 200);
+        $snippet = preg_replace('/[^\x20-\x7E]/', ' ', $snippet);
+        $snippet = preg_replace('/\s+/', ' ', $snippet);
+        $snippet = trim($snippet);
+        woocomm_invfox__trace("Invalid PDF payload signature (cURL). Possible WAF/challenge response. Snippet: {$snippet}", "ERROR");
+        return false;
+      }
+
+      if (!empty($contentType)) {
+        $contentTypeLower = strtolower($contentType);
+        if (strpos($contentTypeLower, 'pdf') === false && strpos($contentTypeLower, 'octet-stream') === false && strpos($contentTypeLower, 'binary') === false) {
+          woocomm_invfox__trace("Unexpected Content-Type for PDF response: {$contentType}", "WARNING");
+        }
+      }
+
+      // Generate filename and save file
+      $rand = generateRandomString(12);
+      $file = $path . "/{$prefix}_{$id}_{$extid}_{$rand}.pdf";
+
+      $bytesWritten = file_put_contents($file, $response);
+      if ($bytesWritten === false || (int) $bytesWritten <= 0) {
+        woocomm_invfox__trace("Failed to save PDF to: $file", "ERROR");
+        return false;
+      }
+
+      clearstatcache(true, $file);
+      $savedSize = file_exists($file) ? (int) filesize($file) : 0;
+      if ($savedSize <= 0) {
+        woocomm_invfox__trace("Saved PDF file is empty: $file", "ERROR");
+        @unlink($file);
+        return false;
+      }
+
+      woocomm_invfox__trace("PDF saved successfully to {$file} ({$savedSize} bytes)", "PDF RESPONSE");
+      return $file;
+    } else {
+      // Fallback to file_get_contents
+      $opts = array(
+        'http' => array(
+          'method' => "GET",
+          'header' => "Authorization: Basic " . base64_encode($this->api->getApiToken() . ':x') . "\r\n" .
+                      "User-Agent: " . $userAgent . "\r\n" .
+                      "Accept: application/pdf,application/octet-stream;q=0.9,*/*;q=0.8\r\n",
+          'timeout' => 60,
+          'ignore_errors' => true
+        )
+      );
+
+      $context = stream_context_create($opts);
+
+      woocomm_invfox__trace("Downloading PDF from: $url", "DOWNLOADING PDF");
+
+      $data = @file_get_contents($url, false, $context);
+
+      $httpCode = 0;
+      $contentType = '';
+      if (isset($http_response_header) && is_array($http_response_header)) {
+        foreach ($http_response_header as $headerLine) {
+          if (preg_match('/^HTTP\/\S+\s+(\d{3})/i', $headerLine, $matches)) {
+            $httpCode = (int) $matches[1];
+          } elseif (stripos($headerLine, 'Content-Type:') === 0) {
+            $contentType = trim(substr($headerLine, 13));
+          }
+        }
+      }
+
+      if ($data === false) {
+        $lastError = error_get_last();
+        $errorMessage = isset($lastError['message']) ? $lastError['message'] : 'Unknown error';
+        woocomm_invfox__trace("Error downloading PDF (stream): {$errorMessage}", "ERROR");
+        return false;
+      }
+
+      $dataLength = strlen($data);
+      woocomm_invfox__trace("PDF response meta (stream): HTTP {$httpCode}, Content-Type '{$contentType}', Bytes {$dataLength}", "PDF RESPONSE");
+
+      if ($httpCode >= 400) {
+        woocomm_invfox__trace("Error downloading PDF (stream): HTTP code $httpCode", "ERROR");
+        return false;
+      }
+
+      if ($dataLength <= 0) {
+        woocomm_invfox__trace("Empty PDF response body (stream, possible Imunify360/ModSecurity interference)", "ERROR");
+        return false;
+      }
+
+      $trimmedStart = ltrim(substr($data, 0, 16));
+      if (strpos($trimmedStart, '%PDF-') !== 0) {
+        $snippet = substr($data, 0, 200);
+        $snippet = preg_replace('/[^\x20-\x7E]/', ' ', $snippet);
+        $snippet = preg_replace('/\s+/', ' ', $snippet);
+        $snippet = trim($snippet);
+        woocomm_invfox__trace("Invalid PDF payload signature (stream). Possible WAF/challenge response. Snippet: {$snippet}", "ERROR");
+        return false;
+      }
+
+      if (!empty($contentType)) {
+        $contentTypeLower = strtolower($contentType);
+        if (strpos($contentTypeLower, 'pdf') === false && strpos($contentTypeLower, 'octet-stream') === false && strpos($contentTypeLower, 'binary') === false) {
+          woocomm_invfox__trace("Unexpected Content-Type for PDF response (stream): {$contentType}", "WARNING");
+        }
+      }
+
+      // Generate filename and save file
+      $rand = generateRandomString(12);
+      $file = $path . "/{$prefix}_{$id}_{$extid}_{$rand}.pdf";
+
+      $bytesWritten = file_put_contents($file, $data);
+      if ($bytesWritten === false || (int) $bytesWritten <= 0) {
+        woocomm_invfox__trace("Failed to save PDF to: $file", "ERROR");
+        return false;
+      }
+
+      clearstatcache(true, $file);
+      $savedSize = file_exists($file) ? (int) filesize($file) : 0;
+      if ($savedSize <= 0) {
+        woocomm_invfox__trace("Saved PDF file is empty: $file", "ERROR");
+        @unlink($file);
+        return false;
+      }
+
+      woocomm_invfox__trace("PDF saved successfully to {$file} ({$savedSize} bytes)", "PDF RESPONSE");
+      return $file;
+    }
+  }
+
+  /**
+   * Mark an invoice as paid
+   * 
+   * @param int $id Invoice ID
+   * @param string $payment_method Payment method
+   * @return StrpcRes API response
+   */
+  public function markInvoicePaid($id, $payment_method) {
+    $res = $this->api->call('invoice-sent-p', 'mark-paid-2', array(
+      'id_invoice_sent_ext' => $id, 
+      'date_of' => date("Y-m-d"), 
+      'amount' => 0, 
+      'payment_method' => $payment_method, 
+      'id_invoice_sent' => 0
+    ));
+    
+    if ($res->isErr()) {
+      woocomm_invfox__trace("Failed to mark invoice as paid: " . print_r($res->getErr(), true), "ERROR");
+    }
+    
+    return $res;
+  }
+  
+  /**
+   * Mark an invoice as paid by invoice ID
+   * 
+   * @param int $invid Invoice ID
+   * @param string $payment_method Payment method
+   * @return StrpcRes API response
+   */
+  public function markInvoicePaid2($invid, $payment_method) {
+    $res = $this->api->call('invoice-sent-p', 'mark-paid-2', array(
+      'id_invoice_sent_ext' => 0, 
+      'date_of' => date("Y-m-d"), 
+      'amount' => 0, 
+      'payment_method' => $payment_method, 
+      'id_invoice_sent' => $invid
+    ));
+    
+    if ($res->isErr()) {
+      woocomm_invfox__trace("Failed to mark invoice as paid: " . print_r($res->getErr(), true), "ERROR");
+    }
+    
+    return $res;
+  }
+  
+  /**
+   * Create an inventory document from an invoice
+   * 
+   * @param int $invid Invoice ID
+   * @param int $from From warehouse ID
+   * @param int $to To warehouse ID
+   * @return StrpcRes API response
+   */
+  public function makeInventoryDocOutOfInvoice($invid, $from, $to) {
+    $res = $this->api->call('transfer', 'make-inventory-doc-smart', array(
+      'id_invoice_sent' => $invid, 
+      'date_created' => $this->_toSIDate(date("Y-m-d")), 
+      'docsubtype' => 0, 
+      'doctype' => 1,
+      'negate_qtys' => 0,
+      'id_contact_from' => $from,
+      'id_contact_to' => $to,
+      'combine_parts' => 0
+    ));
+    
+    if ($res->isErr()) {
+      woocomm_invfox__trace("Failed to create inventory document: " . print_r($res->getErr(), true), "ERROR");
+    }
+    
+    return $res;
+  }
+  
+  /**
+   * Check inventory items
+   * 
+   * @param array $items Items to check
+   * @param int $warehouse Warehouse ID
+   * @param string $date Date
+   * @return array Inventory check results
+   */
+  public function checkInvtItems($items, $warehouse, $date) {
+    $skv = "";
+    foreach ($items as $item) {
+      if (!empty($item['code']) && isset($item['qty'])) {
+        $skv .= $item['code'] . ";" . $item['qty'] . "|";
+      }
+    }
+    
+    if (empty($skv)) {
+      woocomm_invfox__trace("No valid items to check", "ERROR");
+      return array();
+    }
+    
+    $res = $this->api->call('item', 'check-items', array(
+      "just-for-items" => $skv, 
+      "warehouse" => $warehouse, 
+      "date" => $date
+    ));
+    
+    if ($res->isErr()) {
+      woocomm_invfox__trace("Failed to check inventory items: " . print_r($res->getErr(), true), "ERROR");
+      return array();
+    } 
+    
+    return $res->getData();
+  }
+
+  /**
+   * Convert date to US format
+   * 
+   * @param string $d Date string
+   * @return string Date in US format
+   */
+  public function _toUSDate($d) {
+    if (strpos($d, "-") > 0) {
+      $da = explode(" ", $d);
+      $d1 = explode("-", $da[0]);
+      return $d1[1] . "/" . $d1[2] . "/" . $d1[0];
+    } else {
+      return $d;
+    }
+  }
+
+  /**
+   * Convert date to SI format
+   * 
+   * @param string $d Date string
+   * @return string Date in SI format
+   */
+  public function _toSIDate($d) {
+    if (strpos($d, "-") > 0) {
+      $da = explode(" ", $d);
+      $d1 = explode("-", $da[0]);
+      return $d1[2] . "." . $d1[1] . "." . $d1[0];
+    } else {
+      return $d;
+    }
+  }
+
+  /**
+   * Finalize an invoice with fiscal data
+   * 
+   * @param array $header Invoice header data
+   * @return array|bool Finalized invoice data or false on error
+   */
+  public function finalizeInvoice($header) {
+    if (empty($header['id'])) {
+      woocomm_invfox__trace("Invoice ID is required for finalization", "ERROR");
+      return false;
+    }
+    
+    $res = $this->api->call('invoice-sent', 'finalize-invoice', $header);
+    
+    if ($res->isErr()) {
+      woocomm_invfox__trace("Failed to finalize invoice: " . print_r($res->getErr(), true), "ERROR");
+      return false;
+    } else {
+      $resD = $res->getData();
+      return $resD;
+    }
+  }
+  
+  /**
+   * Finalize an invoice without fiscal data
+   * 
+   * @param array $header Invoice header data
+   * @return array|bool Finalized invoice data or false on error
+   */
+  public function finalizeInvoiceNonFiscal($header) {
+    if (empty($header['id'])) {
+      woocomm_invfox__trace("Invoice ID is required for finalization", "ERROR");
+      return false;
+    }
+    
+    $res = $this->api->call('invoice-sent', 'finalize-invoice-2015', $header);
+    
+    if ($res->isErr()) {
+      woocomm_invfox__trace("Failed to finalize non-fiscal invoice: " . print_r($res->getErr(), true), "ERROR");
+      return false;
+    } else {
+      $resD = $res->getData();
+      return $resD;
+    }
+  }
+
+  /**
+   * Get fiscal information for an invoice
+   * 
+   * @param int $id Invoice ID
+   * @return array|bool Fiscal information or false on error
+   */
+  public function getFiscalInfo($id) {
+    if (empty($id)) {
+      woocomm_invfox__trace("Invoice ID is required to get fiscal info", "ERROR");
+      return false;
+    }
+    
+    $res = $this->api->call('invoice-sent', 'get-fiscal-info', array('id' => $id));
+    
+    if ($res->isErr()) {
+      woocomm_invfox__trace("Failed to get fiscal info: " . print_r($res->getErr(), true), "ERROR");
+      return false;
+    } else {
+      $resD = $res->getData();
+      return $resD;
+    }
+  }
+}
+?>
