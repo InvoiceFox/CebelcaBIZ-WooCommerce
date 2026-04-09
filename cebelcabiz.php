@@ -998,11 +998,16 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 						//$filename = $api->downloadInvoicePDF( $order->id, $path );
 					$filename = $api->downloadPDF( 0, $order->get_id(), $upload_path, 'invoice-sent', '', $invoiceLang );
 						
-						if ($filename === false) {
+						$filename_size = (!empty($filename) && file_exists($filename)) ? (int) filesize($filename) : 0;
+
+						if ($filename === false || $filename_size <= 0) {
+							if (!empty($filename) && file_exists($filename) && $filename_size <= 0) {
+								@unlink($filename);
+							}
 							$notices   = get_option( 'cebelcabiz_deferred_admin_notices', array() );
-							$notices[] = "NAPAKA: Ni bilo mogoče prenesti PDF računa. Preverite povezavo s strežnikom Čebelca BIZ.";
+							$notices[] = "NAPAKA: Ni bilo mogoče prenesti veljavnega PDF računa. Preverite povezavo s strežnikom Čebelca BIZ in varnostne filtre (npr. Imunify360/ModSecurity).";
 							update_option( 'cebelcabiz_deferred_admin_notices', $notices );
-							woocomm_invfox__trace("Failed to download invoice PDF", "PDF Error");
+							woocomm_invfox__trace("Failed to download valid invoice PDF (missing or 0B file)", "PDF Error");
 						} else {
 							/*
                               $filetype = wp_check_filetype( basename( $filename ), null );
@@ -1030,7 +1035,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 							*/
 							
 							add_post_meta( $order->get_id(), 'invoicefox_attached_pdf', $filename );
-							woocomm_invfox__trace("Invoice PDF downloaded successfully: " . $filename, "PDF");
+							woocomm_invfox__trace("Invoice PDF downloaded successfully: " . $filename . " (" . $filename_size . " bytes)", "PDF");
 						}
 					} else {
 						$notices   = get_option( 'cebelcabiz_deferred_admin_notices', array() );
@@ -1063,15 +1068,19 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 					$uploads     = wp_upload_dir();
 					$upload_path    = $uploads['basedir'] . "/invoices";
 					$filename = $api->downloadPDF( 0, $order->get_id(), $upload_path, 'preinvoice', '', $invoiceLang );
+					$filename_size = (!empty($filename) && file_exists($filename)) ? (int) filesize($filename) : 0;
 					
-					if ($filename === false) {
+					if ($filename === false || $filename_size <= 0) {
+						if (!empty($filename) && file_exists($filename) && $filename_size <= 0) {
+							@unlink($filename);
+						}
 						$notices   = get_option( 'cebelcabiz_deferred_admin_notices', array() );
-						$notices[] = "NAPAKA: Ni bilo mogoče prenesti PDF predračuna. Preverite povezavo s strežnikom Čebelca BIZ.";
+						$notices[] = "NAPAKA: Ni bilo mogoče prenesti veljavnega PDF predračuna. Preverite povezavo s strežnikom Čebelca BIZ in varnostne filtre (npr. Imunify360/ModSecurity).";
 						update_option( 'cebelcabiz_deferred_admin_notices', $notices );
-						woocomm_invfox__trace("Failed to download proforma PDF", "PDF Error");
+						woocomm_invfox__trace("Failed to download valid proforma PDF (missing or 0B file)", "PDF Error");
 					} else {
 						add_post_meta( $order->get_id(), 'invoicefox_attached_pdf', $filename );
-						woocomm_invfox__trace("Proforma PDF downloaded successfully: " . $filename, "PDF");
+						woocomm_invfox__trace("Proforma PDF downloaded successfully: " . $filename . " (" . $filename_size . " bytes)", "PDF");
 					}
 					$order->save();
 					woocomm_invfox__trace($filename );
@@ -1214,11 +1223,24 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 				
 				return false;
 			}
+
+			clearstatcache(true, $file);
+			$file_size = file_exists($file) ? (int) filesize($file) : 0;
+			if ($file_size <= 0) {
+				woocomm_invfox__trace("Downloaded PDF is missing or 0B for resource: " . $resource . ", file: " . $file, "PDF Error");
+				$notices = get_option('cebelcabiz_deferred_admin_notices', array());
+				$notices[] = "NAPAKA: PDF dokument (" . $resource . ") je prazen ali manjka. Možen vzrok je varnostni filter (npr. Imunify360/ModSecurity).";
+				update_option('cebelcabiz_deferred_admin_notices', $notices);
+				if (file_exists($file)) {
+					@unlink($file);
+				}
+				return false;
+			}
 			
 			// Store the PDF path with the resource-specific meta key
 			update_post_meta( $order->get_id(), $meta_key, $file );
 			woocomm_invfox__trace("Saved new PDF path to post meta with key: " . $meta_key, "PDF");
-			woocomm_invfox__trace("PDF download completed", "PDF");
+			woocomm_invfox__trace("PDF download completed (" . $file_size . " bytes)", "PDF");
 
 			return $file;
 		}

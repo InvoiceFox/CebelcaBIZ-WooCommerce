@@ -250,75 +250,174 @@ class InvfoxAPI {
       $lang = 'si';
     }
 
+    $url = "https://{$this->api->getDomain()}/API-pdf?id=$id&extid=$extid&res={$res}&format=PDF&doctitle={$title}&lang={$lang}&hstyle={$hstyle}";
+    $userAgent = 'CebelcaBIZ-WooCommerce/' . (defined('WOOCOMM_INVFOX_VERSION') ? WOOCOMM_INVFOX_VERSION : 'unknown') . ' (+WordPress)';
+
     // Try to use cURL if available
     if (function_exists('curl_init')) {
-      $url = "https://{$this->api->getDomain()}/API-pdf?id=$id&extid=$extid&res={$res}&format=PDF&doctitle={$title}&lang={$lang}&hstyle={$hstyle}";
-      
       woocomm_invfox__trace("Downloading PDF from: $url", "DOWNLOADING PDF");
-      
+
       $ch = curl_init($url);
       curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+      curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
+      curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+      curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+      curl_setopt($ch, CURLOPT_USERAGENT, $userAgent);
       curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-        "Authorization: Basic " . base64_encode($this->api->getApiToken() . ':x')
+        "Authorization: Basic " . base64_encode($this->api->getApiToken() . ':x'),
+        "Accept: application/pdf,application/octet-stream;q=0.9,*/*;q=0.8"
       ));
-      
+
       $response = curl_exec($ch);
-      $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-      
+      $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+      $contentType = (string) curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+
       if ($response === false) {
         $error = curl_error($ch);
         curl_close($ch);
         woocomm_invfox__trace("Error downloading PDF: $error", "ERROR");
         return false;
       }
-      
+
       curl_close($ch);
-      
+
+      $responseLength = strlen($response);
+      woocomm_invfox__trace("PDF response meta (cURL): HTTP {$httpCode}, Content-Type '{$contentType}', Bytes {$responseLength}", "PDF RESPONSE");
+
       if ($httpCode >= 400) {
         woocomm_invfox__trace("Error downloading PDF: HTTP code $httpCode", "ERROR");
         return false;
       }
-      
+
+      if ($responseLength <= 0) {
+        woocomm_invfox__trace("Empty PDF response body (possible Imunify360/ModSecurity interference)", "ERROR");
+        return false;
+      }
+
+      $trimmedStart = ltrim(substr($response, 0, 16));
+      if (strpos($trimmedStart, '%PDF-') !== 0) {
+        $snippet = substr($response, 0, 200);
+        $snippet = preg_replace('/[^\x20-\x7E]/', ' ', $snippet);
+        $snippet = preg_replace('/\s+/', ' ', $snippet);
+        $snippet = trim($snippet);
+        woocomm_invfox__trace("Invalid PDF payload signature (cURL). Possible WAF/challenge response. Snippet: {$snippet}", "ERROR");
+        return false;
+      }
+
+      if (!empty($contentType)) {
+        $contentTypeLower = strtolower($contentType);
+        if (strpos($contentTypeLower, 'pdf') === false && strpos($contentTypeLower, 'octet-stream') === false && strpos($contentTypeLower, 'binary') === false) {
+          woocomm_invfox__trace("Unexpected Content-Type for PDF response: {$contentType}", "WARNING");
+        }
+      }
+
       // Generate filename and save file
       $rand = generateRandomString(12);
       $file = $path . "/{$prefix}_{$id}_{$extid}_{$rand}.pdf";
-      
-      if (file_put_contents($file, $response) === false) {
+
+      $bytesWritten = file_put_contents($file, $response);
+      if ($bytesWritten === false || (int) $bytesWritten <= 0) {
         woocomm_invfox__trace("Failed to save PDF to: $file", "ERROR");
         return false;
       }
-      
+
+      clearstatcache(true, $file);
+      $savedSize = file_exists($file) ? (int) filesize($file) : 0;
+      if ($savedSize <= 0) {
+        woocomm_invfox__trace("Saved PDF file is empty: $file", "ERROR");
+        @unlink($file);
+        return false;
+      }
+
+      woocomm_invfox__trace("PDF saved successfully to {$file} ({$savedSize} bytes)", "PDF RESPONSE");
       return $file;
     } else {
       // Fallback to file_get_contents
       $opts = array(
         'http' => array(
           'method' => "GET",
-          'header' => "Authorization: Basic " . base64_encode($this->api->getApiToken() . ':x') . "\r\n"
+          'header' => "Authorization: Basic " . base64_encode($this->api->getApiToken() . ':x') . "\r\n" .
+                      "User-Agent: " . $userAgent . "\r\n" .
+                      "Accept: application/pdf,application/octet-stream;q=0.9,*/*;q=0.8\r\n",
+          'timeout' => 60,
+          'ignore_errors' => true
         )
       );
-      
+
       $context = stream_context_create($opts);
-      $url = "https://{$this->api->getDomain()}/API-pdf?id=$id&extid=$extid&res={$res}&format=PDF&doctitle={$title}&lang={$lang}&hstyle={$hstyle}";
-      
+
       woocomm_invfox__trace("Downloading PDF from: $url", "DOWNLOADING PDF");
-      
+
       $data = @file_get_contents($url, false, $context);
-      
+
+      $httpCode = 0;
+      $contentType = '';
+      if (isset($http_response_header) && is_array($http_response_header)) {
+        foreach ($http_response_header as $headerLine) {
+          if (preg_match('/^HTTP\/\S+\s+(\d{3})/i', $headerLine, $matches)) {
+            $httpCode = (int) $matches[1];
+          } elseif (stripos($headerLine, 'Content-Type:') === 0) {
+            $contentType = trim(substr($headerLine, 13));
+          }
+        }
+      }
+
       if ($data === false) {
-        woocomm_invfox__trace("Error downloading PDF", "ERROR");
+        $lastError = error_get_last();
+        $errorMessage = isset($lastError['message']) ? $lastError['message'] : 'Unknown error';
+        woocomm_invfox__trace("Error downloading PDF (stream): {$errorMessage}", "ERROR");
         return false;
       }
-      
+
+      $dataLength = strlen($data);
+      woocomm_invfox__trace("PDF response meta (stream): HTTP {$httpCode}, Content-Type '{$contentType}', Bytes {$dataLength}", "PDF RESPONSE");
+
+      if ($httpCode >= 400) {
+        woocomm_invfox__trace("Error downloading PDF (stream): HTTP code $httpCode", "ERROR");
+        return false;
+      }
+
+      if ($dataLength <= 0) {
+        woocomm_invfox__trace("Empty PDF response body (stream, possible Imunify360/ModSecurity interference)", "ERROR");
+        return false;
+      }
+
+      $trimmedStart = ltrim(substr($data, 0, 16));
+      if (strpos($trimmedStart, '%PDF-') !== 0) {
+        $snippet = substr($data, 0, 200);
+        $snippet = preg_replace('/[^\x20-\x7E]/', ' ', $snippet);
+        $snippet = preg_replace('/\s+/', ' ', $snippet);
+        $snippet = trim($snippet);
+        woocomm_invfox__trace("Invalid PDF payload signature (stream). Possible WAF/challenge response. Snippet: {$snippet}", "ERROR");
+        return false;
+      }
+
+      if (!empty($contentType)) {
+        $contentTypeLower = strtolower($contentType);
+        if (strpos($contentTypeLower, 'pdf') === false && strpos($contentTypeLower, 'octet-stream') === false && strpos($contentTypeLower, 'binary') === false) {
+          woocomm_invfox__trace("Unexpected Content-Type for PDF response (stream): {$contentType}", "WARNING");
+        }
+      }
+
       // Generate filename and save file
       $rand = generateRandomString(12);
       $file = $path . "/{$prefix}_{$id}_{$extid}_{$rand}.pdf";
-      
-      if (file_put_contents($file, $data) === false) {
+
+      $bytesWritten = file_put_contents($file, $data);
+      if ($bytesWritten === false || (int) $bytesWritten <= 0) {
         woocomm_invfox__trace("Failed to save PDF to: $file", "ERROR");
         return false;
       }
-      
+
+      clearstatcache(true, $file);
+      $savedSize = file_exists($file) ? (int) filesize($file) : 0;
+      if ($savedSize <= 0) {
+        woocomm_invfox__trace("Saved PDF file is empty: $file", "ERROR");
+        @unlink($file);
+        return false;
+      }
+
+      woocomm_invfox__trace("PDF saved successfully to {$file} ({$savedSize} bytes)", "PDF RESPONSE");
       return $file;
     }
   }
