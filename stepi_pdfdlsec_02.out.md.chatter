@@ -355,3 +355,483 @@ Content:
 Now let me commit this first improvement:
 ---
 
+[15:51:14] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 23
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:51:19] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=30809 output=113 
+Content:
+
+---
+
+[15:51:19] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 25
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:51:27] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: output=119 input=31724 
+Content:
+Now let me implement the second recommendation - **Secure PDF Storage**. I'll add the security functionality to the main plugin file:
+---
+
+[15:51:27] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 27
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:51:31] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=32374 output=89 
+Content:
+Let me find where the activation hook is implemented to add the secure PDF storage functionality:
+---
+
+[15:51:31] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 29
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:51:40] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=32564 output=658 
+Content:
+Now let me update the activation hook to include PDF directory security:
+---
+
+[15:51:40] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 31
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:51:56] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=33245 output=977 
+Content:
+Now let me add the secure_invoices_directory method and also add PDF validation functionality:
+---
+
+[15:51:56] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 33
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:51:59] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=34250 output=102 
+Content:
+Let me check the exact text around that area:
+---
+
+[15:51:59] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 35
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:52:12] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=34552 output=985 
+Content:
+
+---
+
+[15:52:12] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 37
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:52:16] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: output=102 input=35560 
+Content:
+Now I need to update the existing PDF handling code to use the validation function. Let me find where PDFs are downloaded and stored:
+---
+
+[15:52:16] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 39
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:52:21] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=35828 output=116 
+Content:
+Let me update the PDF validation usage in the main document creation method. First, let me find the specific section:
+---
+
+[15:52:21] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 41
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:52:30] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=36451 output=534 
+Content:
+
+---
+
+[15:52:30] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 43
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:52:34] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=37008 output=106 
+Content:
+Now let me find and update the proforma PDF validation section:
+---
+
+[15:52:34] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 45
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:52:42] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=37719 output=756 
+Content:
+
+---
+
+[15:52:42] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 47
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:52:45] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=38498 output=106 
+Content:
+Now let me find and update the PDF download method as well:
+---
+
+[15:52:45] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 49
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:52:55] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=39231 output=765 
+Content:
+
+---
+
+[15:52:55] REQUEST TO LLM:
+Model: claude-sonnet-4-20250514
+Messages: 51
+System Prompt:
+You are an expert coding assistant. You help users by reading files, executing commands, editing code, and writing new files.
+
+Available tools:
+- read: Read file contents
+- bash: Execute bash commands
+- edit: Make surgical edits to files (find exact text and replace)
+- write: Create or overwrite files
+
+Guidelines:
+- Use bash for file operations like ls, grep, find
+- Use read to examine files before editing
+- Use edit for precise changes (old text must match exactly)
+- Use write only for new files or complete rewrites
+- Be concise in your responses
+- Show file paths clearly when working with files
+
+Current date and time: Thursday, April 9, 2026 at 3:50:17 PM CEST
+Current working directory: /home/jimez/Work/CebelcaBIZ-WooCommerce
+
+---
+
+[15:52:58] RESPONSE FROM LLM:
+Stop Reason: tool_use
+Usage: input=40019 output=65 
+Content:
+Now let me commit these PDF security and validation improvements:
+---
+

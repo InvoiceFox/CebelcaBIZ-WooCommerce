@@ -381,3 +381,560 @@ RESULT:
 Successfully replaced text in includes/class-wc-integration-cebelcabiz.php
 ---
 
+[15:51:14] TOOL: bash
+ARGS:
+  command: git add .
+RESULT:
+
+---
+
+[15:51:19] TOOL: bash
+ARGS:
+  command: git commit -m "Add payment method mapping debug functionality
+
+- Add payment methods helper section in admin settings
+- Show available WooCommerce payment gateways with their IDs
+- Display payment methods from recent orders
+- Provide common mapping examples
+- Improve user guidance for payment method configuration"
+RESULT:
+[master e0f0b51] Add payment method mapping debug functionality
+ 33 files changed, 23574 insertions(+)
+ create mode 100644 ANALYSIS_REPORT.md
+ create mode 100644 ANALYSIS_REPORT_edited.md
+ create mode 100644 cebelcabiz-critical-tests.md
+ create mode 100644 cebelcabiz-edge-cases.md
+ create mode 100644 cebelcabiz-improved.php
+ create mode 100644 cebelcabiz-woocommerce.zip
+ create mode 100644 cebelcabiz-woocommerce/assets/css/log-viewer.css
+ create mode 100644 cebelcabiz-woocommerce/assets/js/log-viewer.js
+ create mode 100755 cebelcabiz-woocommerce/cebelcabiz.php
+ create mode 100644 cebelcabiz-woocommerce/includes/class-wc-cebelcabiz-log-viewer.php
+ create mode 100755 cebelcabiz-woocommerce/includes/class-wc-integration-cebelcabiz.php
+ create mode 100755 cebelcabiz-woocommerce/lib/invfoxapi.php
+ create mode 100755 cebelcabiz-woocommerce/lib/invfoxapi.php.bckp
+ create mode 100755 cebelcabiz-woocommerce/lib/invfoxapi.php.orig
+ create mode 100755 cebelcabiz-woocommerce/lib/pulp/Format.php
+ c
+...[truncated 829 chars]
+---
+
+[15:51:27] TOOL: read
+ARGS:
+  limit: 50
+  path: cebelcabiz.php
+  offset: 100
+RESULT:
+			'round_calculated_shipping_taxrate_to' => 1,
+		];
+
+		/**
+		 * Construct the plugin.
+		 */
+		public function __construct() {
+            // Load configuration
+			$this->conf = get_option('woocommerce_cebelcabiz_settings', []);
+			
+			// Apply defaults for missing configuration values
+			foreach ($this->defaults as $key => $value) {
+				if (!isset($this->conf[$key])) {
+					$this->conf[$key] = $value;
+				}
+			}
+            
+			// Initialize hooks
+			$this->init_hooks();
+		}
+
+		/**
+		 * Initialize all WordPress hooks
+		 */
+		private function init_hooks() {
+			// Core plugin initialization
+			add_action('plugins_loaded', array($this, 'init'));
+			
+			// Order status change hooks
+			add_action('woocommerce_order_status_on-hold', array($this, '_woocommerce_order_status_on_hold'));
+			add_action('woocommerce_order_status_processing', array($this, '_woocommerce_order_status_processing'));
+			add_action('woocommerce_order_status_completed', array($this, '_woocommerce_order_status_completed'
+...[truncated 698 chars]
+---
+
+[15:51:31] TOOL: bash
+ARGS:
+  command: grep -n "myplugin_activate\|activate" cebelcabiz.php
+RESULT:
+196:        public static function myplugin_activate() {
+233:                        date('[Y-m-d H:i:s]') . ' Cebelca BIZ plugin activated' . PHP_EOL
+1379:register_activation_hook( __FILE__, array( 'WC_Cebelcabiz', 'myplugin_activate' ) );
+
+---
+
+[15:51:40] TOOL: edit
+ARGS:
+  path: cebelcabiz.php
+  oldText:         /**
+         * Plugin activation hook callback
+         */
+        public static function myplugin_activate() {
+            // Create invoices directory if it doesn't exist
+            $upload = wp_upload_dir();
+            $upload_dir = $upload['basedir'] . '/invoices';
+            
+            if (!is_dir($upload_dir)) {
+                $dir_created = wp_mkdir_p($upload_dir);
+                if (!$dir_created) {
+                    error_log("Cebelca BIZ: Failed to create invoices directory at: " . $upload_dir);
+                    return;
+                }
+                
+                // Set proper permissions
+                if (!chmod($upload_dir, 0755)) {
+                    error_log("Cebelca BIZ: Failed to set permissions on invoices directory: " . $upload_dir);
+                }
+            }
+            
+            // Verify directory is writable
+            if (!is_writable($upload_dir)) {
+                error_log("Cebelca BIZ: Invoices directory is not writable: " . $upload_dir);
+            }
+  newText:         /**
+         * Plugin activation hook callback
+         */
+        public static function myplugin_activate() {
+            // Create invoices directory if it doesn't exist
+            $upload = wp_upload_dir();
+            $upload_dir = $upload['basedir'] . '/invoices';
+            
+            if (!is_dir($upload_dir)) {
+                $dir_created = wp_mkdir_p($upload_dir);
+                if (!$dir_created) {
+                    error_log("Cebelca BIZ: Failed to create invoices directory at: " . $upload_dir);
+                    return;
+                }
+                
+                // Set proper permissions
+                if (!chmod($upload_dir, 0755)) {
+                    error_log("Cebelca BIZ: Failed to set permissions on invoices directory: " . $upload_dir);
+                }
+            }
+            
+            // Secure invoices directory
+            self::secure_invoices_directory($upload_dir);
+            
+            // Verify directory is writable
+            if (!is_writable($upload_dir)) {
+                error_log("Cebelca BIZ: Invoices directory is not writable: " . $upload_dir);
+            }
+RESULT:
+Successfully replaced text in cebelcabiz.php
+---
+
+[15:51:56] TOOL: edit
+ARGS:
+  path: cebelcabiz.php
+  oldText:                 }
+            }
+        }
+
+		/**
+  newText:                 }
+            }
+        }
+
+        /**
+         * Secure the invoices directory by adding .htaccess file
+         * 
+         * @param string $path Path to the invoices directory
+         */
+        private static function secure_invoices_directory($path) {
+            $htaccess_file = $path . '/.htaccess';
+            $htaccess_content = "# Cebelca BIZ - Deny direct access to invoice PDFs\n";
+            $htaccess_content .= "Order Deny,Allow\n";
+            $htaccess_content .= "Deny from all\n";
+            $htaccess_content .= "\n# Allow WordPress to serve files through proper authentication\n";
+            $htaccess_content .= "<Files ~ \"\\.(pdf)$\">\n";
+            $htaccess_content .= "    Order Deny,Allow\n";
+            $htaccess_content .= "    Deny from all\n";
+            $htaccess_content .= "</Files>\n";
+            
+            if (!file_exists($htaccess_file)) {
+                $result = file_put_contents($htaccess_file, $htaccess_content);
+                if ($result === false) {
+                    error_log("Cebelca BIZ: Failed to create .htaccess file for invoices directory: " . $htaccess_file);
+                } else {
+                    error_log("Cebelca BIZ: Successfully secured invoices directory with .htaccess: " . $htaccess_file);
+                }
+            }
+        }
+
+        /**
+         * Validate PDF file integrity
+         * 
+         * @param string $filepath Path to the PDF file
+         * @return bool True if PDF is valid, false otherwise
+         */
+        private function validate_pdf_file($filepath) {
+            if (!file_exists($filepath)) {
+                woocomm_invfox__trace("PDF validation failed: File does not exist: " . $filepath, "PDF Validation");
+                return false;
+            }
+            
+            // Check file size
+            $file_size = filesize($filepath);
+            if ($file_size === false || $file_size <= 0) {
+                woocomm_invfox__trace("PDF validation failed: File size is 0 or cannot be determined: " . $filepath, "PDF Validation");
+                return false;
+            }
+            
+            // Check PDF header (first 1024 bytes)
+            $fileContent = file_get_contents($filepath, false, null, 0, 1024);
+            if ($fileContent === false || strpos($fileContent, '%PDF-') !== 0) {
+                woocomm_invfox__trace("PDF validation failed: Invalid PDF header: " . $filepath, "PDF Validation");
+                return false;
+            }
+            
+            // Check for PDF trailer (last 1024 bytes)
+            if ($file_size > 1024) {
+                $endContent = file_get_contents($filepath, false, null, -1024);
+                if ($endContent === false || strpos($endContent, '%%EOF') === false) {
+                    woocomm_invfox__trace("PDF validation failed: Missing PDF EOF marker: " . $filepath, "PDF Validation");
+                    return false;
+                }
+            }
+            
+            woocomm_invfox__trace("PDF validation successful: " . $filepath . " (" . $file_size . " bytes)", "PDF Validation");
+            return true;
+        }
+
+		/**
+ERROR: oldText not found in file
+---
+
+[15:51:59] TOOL: read
+ARGS:
+  path: cebelcabiz.php
+  offset: 240
+  limit: 20
+RESULT:
+                        error_log("Cebelca BIZ: Failed to write to log file: " . WOOCOMM_INVFOX_LOG_FILE);
+                    }
+                }
+            }
+        }
+ 
+		/**
+		 * Initialize the plugin.
+		 */
+		public function init() {
+			// Check if WooCommerce is installed
+			if (!class_exists('WC_Integration')) {
+				add_action('admin_notices', function() {
+					echo '<div class="error"><p>' . 
+                                                  __('Cebelca BIZ requires WooCommerce to be installed and active.', 'woocommerce-cebelcabiz') . 
+                                                  '</p></div>';
+				});
+				return;
+			}
+
+---
+
+[15:52:12] TOOL: edit
+ARGS:
+  path: cebelcabiz.php
+  oldText:                 }
+            }
+        }
+ 
+		/**
+		 * Initialize the plugin.
+		 */
+  newText:                 }
+            }
+        }
+
+        /**
+         * Secure the invoices directory by adding .htaccess file
+         * 
+         * @param string $path Path to the invoices directory
+         */
+        private static function secure_invoices_directory($path) {
+            $htaccess_file = $path . '/.htaccess';
+            $htaccess_content = "# Cebelca BIZ - Deny direct access to invoice PDFs\n";
+            $htaccess_content .= "Order Deny,Allow\n";
+            $htaccess_content .= "Deny from all\n";
+            $htaccess_content .= "\n# Allow WordPress to serve files through proper authentication\n";
+            $htaccess_content .= "<Files ~ \"\\.(pdf)$\">\n";
+            $htaccess_content .= "    Order Deny,Allow\n";
+            $htaccess_content .= "    Deny from all\n";
+            $htaccess_content .= "</Files>\n";
+            
+            if (!file_exists($htaccess_file)) {
+                $result = file_put_contents($htaccess_file, $htaccess_content);
+                if ($result === false) {
+                    error_log("Cebelca BIZ: Failed to create .htaccess file for invoices directory: " . $htaccess_file);
+                } else {
+                    error_log("Cebelca BIZ: Successfully secured invoices directory with .htaccess: " . $htaccess_file);
+                }
+            }
+        }
+
+        /**
+         * Validate PDF file integrity
+         * 
+         * @param string $filepath Path to the PDF file
+         * @return bool True if PDF is valid, false otherwise
+         */
+        private function validate_pdf_file($filepath) {
+            if (!file_exists($filepath)) {
+                woocomm_invfox__trace("PDF validation failed: File does not exist: " . $filepath, "PDF Validation");
+                return false;
+            }
+            
+            // Check file size
+            $file_size = filesize($filepath);
+            if ($file_size === false || $file_size <= 0) {
+                woocomm_invfox__trace("PDF validation failed: File size is 0 or cannot be determined: " . $filepath, "PDF Validation");
+                return false;
+            }
+            
+            // Check PDF header (first 1024 bytes)
+            $fileContent = file_get_contents($filepath, false, null, 0, 1024);
+            if ($fileContent === false || strpos($fileContent, '%PDF-') !== 0) {
+                woocomm_invfox__trace("PDF validation failed: Invalid PDF header: " . $filepath, "PDF Validation");
+                return false;
+            }
+            
+            // Check for PDF trailer (last 1024 bytes)
+            if ($file_size > 1024) {
+                $endContent = file_get_contents($filepath, false, null, -1024);
+                if ($endContent === false || strpos($endContent, '%%EOF') === false) {
+                    woocomm_invfox__trace("PDF validation failed: Missing PDF EOF marker: " . $filepath, "PDF Validation");
+                    return false;
+                }
+            }
+            
+            woocomm_invfox__trace("PDF validation successful: " . $filepath . " (" . $file_size . " bytes)", "PDF Validation");
+            return true;
+        }
+ 
+		/**
+		 * Initialize the plugin.
+		 */
+RESULT:
+Successfully replaced text in cebelcabiz.php
+---
+
+[15:52:16] TOOL: bash
+ARGS:
+  command: grep -n "downloadPDF\|filename.*=.*\$api" cebelcabiz.php
+RESULT:
+1066:						//$filename = $api->downloadInvoicePDF( $order->id, $path );
+1067:					$filename = $api->downloadPDF( 0, $order->get_id(), $upload_path, 'invoice-sent', '', $invoiceLang );
+1138:					$filename = $api->downloadPDF( 0, $order->get_id(), $upload_path, 'preinvoice', '', $invoiceLang );
+1281:			$file = $api->downloadPDF( 0, $order->get_id(), $upload_path, $resource, '', $invoiceLang );
+
+---
+
+[15:52:21] TOOL: read
+ARGS:
+  path: cebelcabiz.php
+  offset: 1060
+  limit: 30
+RESULT:
+					}
+
+					if ( $vatLevelsOK ) { 
+						$uploads = wp_upload_dir();
+						$upload_path    = $uploads['basedir'] . "/invoices";
+						
+						//$filename = $api->downloadInvoicePDF( $order->id, $path );
+					$filename = $api->downloadPDF( 0, $order->get_id(), $upload_path, 'invoice-sent', '', $invoiceLang );
+						
+						$filename_size = (!empty($filename) && file_exists($filename)) ? (int) filesize($filename) : 0;
+
+						if ($filename === false || $filename_size <= 0) {
+							if (!empty($filename) && file_exists($filename) && $filename_size <= 0) {
+								@unlink($filename);
+							}
+							$notices   = get_option( 'cebelcabiz_deferred_admin_notices', array() );
+							$notices[] = "NAPAKA: Ni bilo mogoče prenesti veljavnega PDF računa. Preverite povezavo s strežnikom Čebelca BIZ in varnostne filtre (npr. Imunify360/ModSecurity).";
+							update_option( 'cebelcabiz_deferred_admin_notices', $notices );
+							woocomm_invfox__trace("Failed to download valid invoice PDF (missing or
+...[truncated 672 chars]
+---
+
+[15:52:30] TOOL: edit
+ARGS:
+  newText: 						// Validate downloaded PDF file
+						if ($filename === false || !$this->validate_pdf_file($filename)) {
+							if (!empty($filename) && file_exists($filename)) {
+								@unlink($filename); // Remove invalid file
+							}
+							$notices   = get_option( 'cebelcabiz_deferred_admin_notices', array() );
+							$notices[] = "NAPAKA: Ni bilo mogoče prenesti veljavnega PDF računa. Preverite povezavo s strežnikom Čebelca BIZ in varnostne filtre (npr. Imunify360/ModSecurity).";
+							update_option( 'cebelcabiz_deferred_admin_notices', $notices );
+							woocomm_invfox__trace("Failed to download or validate invoice PDF", "PDF Error");
+						} else {
+  path: cebelcabiz.php
+  oldText: 						$filename_size = (!empty($filename) && file_exists($filename)) ? (int) filesize($filename) : 0;
+
+						if ($filename === false || $filename_size <= 0) {
+							if (!empty($filename) && file_exists($filename) && $filename_size <= 0) {
+								@unlink($filename);
+							}
+							$notices   = get_option( 'cebelcabiz_deferred_admin_notices', array() );
+							$notices[] = "NAPAKA: Ni bilo mogoče prenesti veljavnega PDF računa. Preverite povezavo s strežnikom Čebelca BIZ in varnostne filtre (npr. Imunify360/ModSecurity).";
+							update_option( 'cebelcabiz_deferred_admin_notices', $notices );
+							woocomm_invfox__trace("Failed to download valid invoice PDF (missing or 0B file)", "PDF Error");
+						} else {
+RESULT:
+Successfully replaced text in cebelcabiz.php
+---
+
+[15:52:34] TOOL: read
+ARGS:
+  path: cebelcabiz.php
+  offset: 1130
+  limit: 30
+RESULT:
+
+				if ( $r2->isOk() ) {
+
+					woocomm_invfox__trace("Uploading invoice PDF", "Document");
+
+					$uploads     = wp_upload_dir();
+					$upload_path    = $uploads['basedir'] . "/invoices";
+					$filename = $api->downloadPDF( 0, $order->get_id(), $upload_path, 'preinvoice', '', $invoiceLang );
+					$filename_size = (!empty($filename) && file_exists($filename)) ? (int) filesize($filename) : 0;
+					
+					if ($filename === false || $filename_size <= 0) {
+						if (!empty($filename) && file_exists($filename) && $filename_size <= 0) {
+							@unlink($filename);
+						}
+						$notices   = get_option( 'cebelcabiz_deferred_admin_notices', array() );
+						$notices[] = "NAPAKA: Ni bilo mogoče prenesti veljavnega PDF predračuna. Preverite povezavo s strežnikom Čebelca BIZ in varnostne filtre (npr. Imunify360/ModSecurity).";
+						update_option( 'cebelcabiz_deferred_admin_notices', $notices );
+						woocomm_invfox__trace("Failed to download valid proforma PDF (missing or 0B file)", "PDF Error"
+...[truncated 684 chars]
+---
+
+[15:52:42] TOOL: edit
+ARGS:
+  path: cebelcabiz.php
+  oldText: 					$filename = $api->downloadPDF( 0, $order->get_id(), $upload_path, 'preinvoice', '', $invoiceLang );
+					$filename_size = (!empty($filename) && file_exists($filename)) ? (int) filesize($filename) : 0;
+					
+					if ($filename === false || $filename_size <= 0) {
+						if (!empty($filename) && file_exists($filename) && $filename_size <= 0) {
+							@unlink($filename);
+						}
+						$notices   = get_option( 'cebelcabiz_deferred_admin_notices', array() );
+						$notices[] = "NAPAKA: Ni bilo mogoče prenesti veljavnega PDF predračuna. Preverite povezavo s strežnikom Čebelca BIZ in varnostne filtre (npr. Imunify360/ModSecurity).";
+						update_option( 'cebelcabiz_deferred_admin_notices', $notices );
+						woocomm_invfox__trace("Failed to download valid proforma PDF (missing or 0B file)", "PDF Error");
+					} else {
+						add_post_meta( $order->get_id(), 'invoicefox_attached_pdf', $filename );
+						woocomm_invfox__trace("Proforma PDF downloaded successfully: " . $filename . " (" . $filename_size . " bytes)", "PDF");
+					}
+  newText: 					$filename = $api->downloadPDF( 0, $order->get_id(), $upload_path, 'preinvoice', '', $invoiceLang );
+					
+					// Validate downloaded PDF file
+					if ($filename === false || !$this->validate_pdf_file($filename)) {
+						if (!empty($filename) && file_exists($filename)) {
+							@unlink($filename); // Remove invalid file
+						}
+						$notices   = get_option( 'cebelcabiz_deferred_admin_notices', array() );
+						$notices[] = "NAPAKA: Ni bilo mogoče prenesti veljavnega PDF predračuna. Preverite povezavo s strežnikom Čebelca BIZ in varnostne filtre (npr. Imunify360/ModSecurity).";
+						update_option( 'cebelcabiz_deferred_admin_notices', $notices );
+						woocomm_invfox__trace("Failed to download or validate proforma PDF", "PDF Error");
+					} else {
+						add_post_meta( $order->get_id(), 'invoicefox_attached_pdf', $filename );
+						woocomm_invfox__trace("Proforma PDF downloaded successfully and validated: " . $filename, "PDF");
+					}
+RESULT:
+Successfully replaced text in cebelcabiz.php
+---
+
+[15:52:45] TOOL: read
+ARGS:
+  path: cebelcabiz.php
+  offset: 1275
+  limit: 40
+RESULT:
+			
+			$api = new InvfoxAPI( $this->conf['api_key'], $this->conf['api_domain'], true );
+			$api->setDebugHook( "woocomm_invfox__trace" );
+
+			$invoiceLang = $this->get_order_invoice_language( $order );
+			$file = $api->downloadPDF( 0, $order->get_id(), $upload_path, $resource, '', $invoiceLang );
+			
+			// Check if download was successful
+			if ($file === false) {
+				woocomm_invfox__trace("PDF download failed for resource: " . $resource, "PDF Error");
+				
+				// Add admin notice about the failure
+				$notices = get_option('cebelcabiz_deferred_admin_notices', array());
+				$notices[] = "NAPAKA: Ni bilo mogoče prenesti PDF dokumenta (" . $resource . "). Preverite povezavo s strežnikom Čebelca BIZ.";
+				update_option('cebelcabiz_deferred_admin_notices', $notices);
+				
+				return false;
+			}
+
+			clearstatcache(true, $file);
+			$file_size = file_exists($file) ? (int) filesize($file) : 0;
+			if ($file_size <= 0) {
+				woocomm_invfox__trace("Downloaded PDF is missing or 0B for resource
+...[truncated 749 chars]
+---
+
+[15:52:55] TOOL: edit
+ARGS:
+  path: cebelcabiz.php
+  oldText: 			$file = $api->downloadPDF( 0, $order->get_id(), $upload_path, $resource, '', $invoiceLang );
+			
+			// Check if download was successful
+			if ($file === false) {
+				woocomm_invfox__trace("PDF download failed for resource: " . $resource, "PDF Error");
+				
+				// Add admin notice about the failure
+				$notices = get_option('cebelcabiz_deferred_admin_notices', array());
+				$notices[] = "NAPAKA: Ni bilo mogoče prenesti PDF dokumenta (" . $resource . "). Preverite povezavo s strežnikom Čebelca BIZ.";
+				update_option('cebelcabiz_deferred_admin_notices', $notices);
+				
+				return false;
+			}
+
+			clearstatcache(true, $file);
+			$file_size = file_exists($file) ? (int) filesize($file) : 0;
+			if ($file_size <= 0) {
+				woocomm_invfox__trace("Downloaded PDF is missing or 0B for resource: " . $resource . ", file: " . $file, "PDF Error");
+				$notices = get_option('cebelcabiz_deferred_admin_notices', array());
+				$notices[] = "NAPAKA: PDF dokument (" . $resource . ") je prazen ali manjka. Možen vzrok je varnostni filter (npr. Imunify360/ModSecurity).";
+				update_option('cebelcabiz_deferred_admin_notices', $notices);
+				if (file_exists($file)) {
+					@unlink($file);
+				}
+				return false;
+			}
+  newText: 			$file = $api->downloadPDF( 0, $order->get_id(), $upload_path, $resource, '', $invoiceLang );
+			
+			// Check if download was successful and validate PDF
+			if ($file === false || !$this->validate_pdf_file($file)) {
+				if (!empty($file) && file_exists($file)) {
+					@unlink($file); // Remove invalid file
+				}
+				
+				woocomm_invfox__trace("PDF download failed or validation failed for resource: " . $resource, "PDF Error");
+				
+				// Add admin notice about the failure
+				$notices = get_option('cebelcabiz_deferred_admin_notices', array());
+				$notices[] = "NAPAKA: Ni bilo mogoče prenesti veljavnega PDF dokumenta (" . $resource . "). Preverite povezavo s strežnikom Čebelca BIZ.";
+				update_option('cebelcabiz_deferred_admin_notices', $notices);
+				
+				return false;
+			}
+RESULT:
+Successfully replaced text in cebelcabiz.php
+---
+

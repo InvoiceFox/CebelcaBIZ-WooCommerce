@@ -93,3 +93,129 @@ Now let me commit this first improvement:
 [15:51:14] LLM wants to execute tools
 
 [bash] git add .
+[15:51:14] Tool bash executed successfully
+
+[15:51:14] Turn 12: Sending request to LLM
+
+[0.7795$] [15:51:19] Received response from LLM, tokens: 30809 in, 113 out
+[15:51:19] LLM wants to execute tools
+
+[bash] git commit -m "Add payment method mapping debug functionality
+
+- Add payment methods helper section in admin settings
+- Show available WooCommerce payment gateways with their IDs
+- Display payment methods from recent orders
+- Provide common mapping examples
+- Improve user guidance for payment method configuration"
+[15:51:19] Tool bash executed successfully
+
+[15:51:19] Turn 13: Sending request to LLM
+Now let me implement the second recommendation - **Secure PDF Storage**. I'll add the security functionality to the main plugin file:
+[0.8765$] [15:51:27] Received response from LLM, tokens: 31724 in, 119 out
+[15:51:27] LLM wants to execute tools
+
+[read] cebelcabiz.php
+[15:51:27] Tool read executed successfully
+
+[15:51:27] Turn 14: Sending request to LLM
+Let me find where the activation hook is implemented to add the secure PDF storage functionality:
+[0.9749$] [15:51:31] Received response from LLM, tokens: 32374 in, 89 out
+[15:51:31] LLM wants to execute tools
+
+[bash] grep -n "myplugin_activate\|activate" cebelcabiz.php
+[15:51:31] Tool bash executed successfully
+
+[15:51:31] Turn 15: Sending request to LLM
+Now let me update the activation hook to include PDF directory security:
+[1.0825$] [15:51:40] Received response from LLM, tokens: 32564 in, 658 out
+[15:51:40] LLM wants to execute tools
+
+[edit] cebelcabiz.php
+[15:51:40] Tool edit executed successfully
+
+[15:51:40] Turn 16: Sending request to LLM
+Now let me add the secure_invoices_directory method and also add PDF validation functionality:
+[1.1969$] [15:51:56] Received response from LLM, tokens: 33245 in, 977 out
+[15:51:56] LLM wants to execute tools
+
+[edit] cebelcabiz.php
+[15:51:56] Tool edit failed: oldText not found in file
+
+[15:51:56] Turn 17: Sending request to LLM
+Let me check the exact text around that area:
+[1.3012$] [15:51:59] Received response from LLM, tokens: 34250 in, 102 out
+[15:51:59] LLM wants to execute tools
+
+[read] cebelcabiz.php
+[15:51:59] Tool read executed successfully
+
+[15:51:59] Turn 18: Sending request to LLM
+
+[1.4196$] [15:52:12] Received response from LLM, tokens: 34552 in, 985 out
+[15:52:12] LLM wants to execute tools
+
+[edit] cebelcabiz.php
+[15:52:12] Tool edit executed successfully
+
+[15:52:12] Turn 19: Sending request to LLM
+Now I need to update the existing PDF handling code to use the validation function. Let me find where PDFs are downloaded and stored:
+[1.5278$] [15:52:16] Received response from LLM, tokens: 35560 in, 102 out
+[15:52:16] LLM wants to execute tools
+
+[bash] grep -n "downloadPDF\|filename.*=.*\$api" cebelcabiz.php
+[15:52:16] Tool bash executed successfully
+
+[15:52:16] Turn 20: Sending request to LLM
+Let me update the PDF validation usage in the main document creation method. First, let me find the specific section:
+[1.6370$] [15:52:21] Received response from LLM, tokens: 35828 in, 116 out
+[15:52:21] LLM wants to execute tools
+
+[read] cebelcabiz.php
+[15:52:21] Tool read executed successfully
+
+[15:52:21] Turn 21: Sending request to LLM
+
+[1.7544$] [15:52:30] Received response from LLM, tokens: 36451 in, 534 out
+[15:52:30] LLM wants to execute tools
+
+[edit] cebelcabiz.php
+[15:52:30] Tool edit executed successfully
+
+[15:52:30] Turn 22: Sending request to LLM
+Now let me find and update the proforma PDF validation section:
+[1.8670$] [15:52:34] Received response from LLM, tokens: 37008 in, 106 out
+[15:52:34] LLM wants to execute tools
+
+[read] cebelcabiz.php
+[15:52:34] Tool read executed successfully
+
+[15:52:34] Turn 23: Sending request to LLM
+
+[1.9915$] [15:52:42] Received response from LLM, tokens: 37719 in, 756 out
+[15:52:42] LLM wants to execute tools
+
+[edit] cebelcabiz.php
+[15:52:42] Tool edit executed successfully
+
+[15:52:42] Turn 24: Sending request to LLM
+Now let me find and update the PDF download method as well:
+[2.1086$] [15:52:45] Received response from LLM, tokens: 38498 in, 106 out
+[15:52:45] LLM wants to execute tools
+
+[read] cebelcabiz.php
+[15:52:45] Tool read executed successfully
+
+[15:52:45] Turn 25: Sending request to LLM
+
+[2.2378$] [15:52:55] Received response from LLM, tokens: 39231 in, 765 out
+[15:52:55] LLM wants to execute tools
+
+[edit] cebelcabiz.php
+[15:52:55] Tool edit executed successfully
+
+[15:52:55] Turn 26: Sending request to LLM
+Now let me commit these PDF security and validation improvements:
+[2.3588$] [15:52:58] Received response from LLM, tokens: 40019 in, 65 out
+[15:52:58] LLM wants to execute tools
+
+[bash] git add .
