@@ -3,7 +3,7 @@
  * Plugin Name: Cebelca BIZ
  * Plugin URI:
  * Description: Connects WooCommerce to Cebelca.biz for invoicing and optionally inventory
- * Version: 0.8.3
+ * Version: 0.8.9
  * Author: JankoM
  * Author URI: https://github.com/refaktor/
  * Developer: Janko M.
@@ -97,7 +97,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 			'order_num_label' => 'Na osnovi naročila:',
 			'round_calculated_netprice_to' => 4,
 			'round_calculated_taxrate_to' => 1,
-			'round_calculated_shipping_taxrate_to' => 2,
+			'round_calculated_shipping_taxrate_to' => 1,
 		];
 
 		/**
@@ -211,6 +211,9 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
                 }
             }
             
+            // Secure invoices directory
+            self::secure_invoices_directory($upload_dir);
+            
             // Verify directory is writable
             if (!is_writable($upload_dir)) {
                 error_log("Cebelca BIZ: Invoices directory is not writable: " . $upload_dir);
@@ -238,6 +241,134 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
                     }
                 }
             }
+        }
+
+        /**
+         * Secure the invoices directory by adding .htaccess file
+         * 
+         * @param string $path Path to the invoices directory
+         */
+        private static function secure_invoices_directory($path) {
+            $htaccess_file = $path . '/.htaccess';
+            $htaccess_content = "# Cebelca BIZ - Deny direct access to invoice PDFs\n";
+            $htaccess_content .= "Order Deny,Allow\n";
+            $htaccess_content .= "Deny from all\n";
+            $htaccess_content .= "\n# Allow WordPress to serve files through proper authentication\n";
+            $htaccess_content .= "<Files ~ \"\\.(pdf)$\">\n";
+            $htaccess_content .= "    Order Deny,Allow\n";
+            $htaccess_content .= "    Deny from all\n";
+            $htaccess_content .= "</Files>\n";
+            
+            if (!file_exists($htaccess_file)) {
+                $result = file_put_contents($htaccess_file, $htaccess_content);
+                if ($result === false) {
+                    error_log("Cebelca BIZ: Failed to create .htaccess file for invoices directory: " . $htaccess_file);
+                } else {
+                    error_log("Cebelca BIZ: Successfully secured invoices directory with .htaccess: " . $htaccess_file);
+                }
+            }
+        }
+
+        /**
+         * Map payment method from WooCommerce to Cebelca BIZ format
+         * Supports both payment method title and ID
+         * 
+         * @param string $wc_method WooCommerce payment method (title or ID)
+         * @param string $methods_map Payment methods mapping string  
+         * @return string|int Mapped payment method or error code (-1 format error, -2 not found)
+         */
+        private function mapPaymentMethods($wc_method, $methods_map) {
+            if (empty($wc_method) || empty($methods_map)) {
+                woocomm_invfox__trace("Empty payment method or mapping", "Payment Mapping");
+                return -2; // Missing data
+            }
+            
+            // Clean up the mapping string (handle HTML entities)
+            $mmap = str_replace("&gt;", ">", $methods_map);
+            woocomm_invfox__trace("Processing payment method: '$wc_method' with mapping: '$mmap'", "Payment Mapping");
+            
+            // Validate format - allow more flexible characters including spaces and special chars
+            if (!preg_match('/([^-;]+->[^-;]+)/', $mmap)) {
+                woocomm_invfox__trace("Invalid payment methods map format: '$mmap'", "Payment Mapping Error");
+                return -1; // Invalid format
+            }
+            
+            // Split the string into pairs
+            $pairs = explode(';', $mmap);
+            
+            // Try exact matches first, then partial matches
+            foreach ($pairs as $pair) {
+                $pair = trim($pair);
+                if (empty($pair) || strpos($pair, '->') === false) {
+                    continue; // Skip invalid pairs
+                }
+                
+                list($pairKey, $value) = explode('->', $pair, 2);
+                $pairKey = trim($pairKey);
+                $value = trim($value);
+                
+                if (empty($pairKey) || empty($value)) {
+                    continue; // Skip empty keys/values
+                }
+                
+                // Check for exact match (case insensitive)
+                if (strcasecmp($pairKey, $wc_method) === 0) {
+                    woocomm_invfox__trace("Found exact match: '$pairKey' -> '$value'", "Payment Mapping");
+                    return $value;
+                }
+                
+                // Check for wildcard match
+                if (strpos($pairKey, "*") !== false) {
+                    $pattern = str_replace("*", ".*", preg_quote($pairKey, '/'));
+                    if (preg_match('/^' . $pattern . '$/i', $wc_method)) {
+                        woocomm_invfox__trace("Found wildcard match: '$pairKey' -> '$value'", "Payment Mapping");
+                        return $value;
+                    }
+                }
+            }
+            
+            // No match found
+            woocomm_invfox__trace("No mapping found for payment method: '$wc_method'", "Payment Mapping");
+            return -2; // Not found
+        }
+
+        /**
+         * Validate PDF file integrity
+         * 
+         * @param string $filepath Path to the PDF file
+         * @return bool True if PDF is valid, false otherwise
+         */
+        private function validate_pdf_file($filepath) {
+            if (!file_exists($filepath)) {
+                woocomm_invfox__trace("PDF validation failed: File does not exist: " . $filepath, "PDF Validation");
+                return false;
+            }
+            
+            // Check file size
+            $file_size = filesize($filepath);
+            if ($file_size === false || $file_size <= 0) {
+                woocomm_invfox__trace("PDF validation failed: File size is 0 or cannot be determined: " . $filepath, "PDF Validation");
+                return false;
+            }
+            
+            // Check PDF header (first 1024 bytes)
+            $fileContent = file_get_contents($filepath, false, null, 0, 1024);
+            if ($fileContent === false || strpos($fileContent, '%PDF-') !== 0) {
+                woocomm_invfox__trace("PDF validation failed: Invalid PDF header: " . $filepath, "PDF Validation");
+                return false;
+            }
+            
+            // Check for PDF trailer (last 1024 bytes)
+            if ($file_size > 1024) {
+                $endContent = file_get_contents($filepath, false, null, -1024);
+                if ($endContent === false || strpos($endContent, '%%EOF') === false) {
+                    woocomm_invfox__trace("PDF validation failed: Missing PDF EOF marker: " . $filepath, "PDF Validation");
+                    return false;
+                }
+            }
+            
+            woocomm_invfox__trace("PDF validation successful: " . $filepath . " (" . $file_size . " bytes)", "PDF Validation");
+            return true;
         }
  
 		/**
@@ -753,7 +884,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 						( $variation_str ? "\n" . $variation_str : "" ), // ( $this->conf['add_post_content_in_item_descr'] == "yes" ? "\n" . $product->get_content : "" ),q
 						'qty'      => $quantity,
 						'mu'       => $mu,
-						'price'    => $price, // round( $item['line_total'] / $item['qty'], $this->conf['round_calculated_netprice_to'] ),
+						'price'    => round($price, $this->conf['round_calculated_netprice_to']), // ,round_calculated_netprice_to), // round( $item['line_total'] / $item['qty'], $this->conf['round_calculated_netprice_to'] ),
 						'vat'      => $vatLevel,
 						'discount' => $discount_percentage
 					);
@@ -775,12 +906,31 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 					);
 				}
 
+				// Calculate precise net shipping from gross amount to avoid rounding issues
+				// WooCommerce rounds net shipping to 2 decimals, but we need 4 decimals for accurate invoicing
+				// Use rounded values (2 decimals) for gross calculation - this is what customer actually pays
+				$shipping_total = round((float) $order->get_shipping_total(), 2);
+				$shipping_tax = round((float) $order->get_shipping_tax(), 2);
+				$gross_shipping = round($shipping_total + $shipping_tax, 2);
+				
+				// Get the precise VAT rate from the function that can handle small inaccuracies
+				$shipping_vat_rate = calculatePreciseSloVAT($shipping_total, $shipping_tax, $vatLevels);
+				
+				// Calculate precise net price from the rounded gross using the correct VAT rate
+				if ($gross_shipping > 0 && $shipping_vat_rate > 0) {
+					$precise_net_shipping = $gross_shipping / (1 + ($shipping_vat_rate / 100));
+				} else {
+					$precise_net_shipping = $shipping_total;
+				}
+				
+				woocomm_invfox__trace("Shipping - Rounded Net: $shipping_total, Rounded Tax: $shipping_tax, Gross: $gross_shipping, VAT Rate: $shipping_vat_rate%, Precise Net: $precise_net_shipping", "Document");
+
 				$body2[] = array(
 					'title'    => "Dostava - " . $order->get_shipping_method(),
 					'qty'      => 1,
 					'mu'       => '',
-					'price'    => $order->get_shipping_total(),
-					'vat'      => calculatePreciseSloVAT($order->get_shipping_total(), $order->get_shipping_tax(), $vatLevels),
+					'price'    => round($precise_net_shipping, $this->conf['round_calculated_netprice_to'] ),
+					'vat'      => $shipping_vat_rate,
 					'discount' => 0
 				);
 			}
@@ -906,10 +1056,10 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 						woocomm_invfox__trace("Marking invoice as paid", "Payment");
 						woocomm_invfox__trace("Current payment method title: " . $currentPM . " / ID: " . $currentPM_id, "Payment");
 						woocomm_invfox__trace("Payment methods map: " . $this->conf['payment_methods_map'], "Payment");
-						$payment_method = mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
+						$payment_method = $this->mapPaymentMethods($currentPM, $this->conf['payment_methods_map']);
 						if ( $payment_method == -2 && ! empty( $currentPM_id ) ) {
 							woocomm_invfox__trace("Title lookup failed, trying payment method ID: " . $currentPM_id, "Payment");
-							$payment_method = mapPaymentMethods($currentPM_id, $this->conf['payment_methods_map']);
+							$payment_method = $this->mapPaymentMethods($currentPM_id, $this->conf['payment_methods_map']);
 						}
 						woocomm_invfox__trace("Mapped payment method: " . $payment_method, "Payment");
 						
@@ -979,16 +1129,15 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 						//$filename = $api->downloadInvoicePDF( $order->id, $path );
 					$filename = $api->downloadPDF( 0, $order->get_id(), $upload_path, 'invoice-sent', '', $invoiceLang );
 						
-						$filename_size = (!empty($filename) && file_exists($filename)) ? (int) filesize($filename) : 0;
-
-						if ($filename === false || $filename_size <= 0) {
-							if (!empty($filename) && file_exists($filename) && $filename_size <= 0) {
-								@unlink($filename);
+						// Validate downloaded PDF file
+						if ($filename === false || !$this->validate_pdf_file($filename)) {
+							if (!empty($filename) && file_exists($filename)) {
+								@unlink($filename); // Remove invalid file
 							}
 							$notices   = get_option( 'cebelcabiz_deferred_admin_notices', array() );
 							$notices[] = "NAPAKA: Ni bilo mogoče prenesti veljavnega PDF računa. Preverite povezavo s strežnikom Čebelca BIZ in varnostne filtre (npr. Imunify360/ModSecurity).";
 							update_option( 'cebelcabiz_deferred_admin_notices', $notices );
-							woocomm_invfox__trace("Failed to download valid invoice PDF (missing or 0B file)", "PDF Error");
+							woocomm_invfox__trace("Failed to download or validate invoice PDF", "PDF Error");
 						} else {
 							/*
                               $filetype = wp_check_filetype( basename( $filename ), null );
@@ -1049,19 +1198,19 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 					$uploads     = wp_upload_dir();
 					$upload_path    = $uploads['basedir'] . "/invoices";
 					$filename = $api->downloadPDF( 0, $order->get_id(), $upload_path, 'preinvoice', '', $invoiceLang );
-					$filename_size = (!empty($filename) && file_exists($filename)) ? (int) filesize($filename) : 0;
 					
-					if ($filename === false || $filename_size <= 0) {
-						if (!empty($filename) && file_exists($filename) && $filename_size <= 0) {
-							@unlink($filename);
+					// Validate downloaded PDF file
+					if ($filename === false || !$this->validate_pdf_file($filename)) {
+						if (!empty($filename) && file_exists($filename)) {
+							@unlink($filename); // Remove invalid file
 						}
 						$notices   = get_option( 'cebelcabiz_deferred_admin_notices', array() );
 						$notices[] = "NAPAKA: Ni bilo mogoče prenesti veljavnega PDF predračuna. Preverite povezavo s strežnikom Čebelca BIZ in varnostne filtre (npr. Imunify360/ModSecurity).";
 						update_option( 'cebelcabiz_deferred_admin_notices', $notices );
-						woocomm_invfox__trace("Failed to download valid proforma PDF (missing or 0B file)", "PDF Error");
+						woocomm_invfox__trace("Failed to download or validate proforma PDF", "PDF Error");
 					} else {
 						add_post_meta( $order->get_id(), 'invoicefox_attached_pdf', $filename );
-						woocomm_invfox__trace("Proforma PDF downloaded successfully: " . $filename . " (" . $filename_size . " bytes)", "PDF");
+						woocomm_invfox__trace("Proforma PDF downloaded successfully and validated: " . $filename, "PDF");
 					}
 					$order->save();
 					woocomm_invfox__trace($filename );
@@ -1193,28 +1342,19 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 			$invoiceLang = $this->get_order_invoice_language( $order );
 			$file = $api->downloadPDF( 0, $order->get_id(), $upload_path, $resource, '', $invoiceLang );
 			
-			// Check if download was successful
-			if ($file === false) {
-				woocomm_invfox__trace("PDF download failed for resource: " . $resource, "PDF Error");
+			// Check if download was successful and validate PDF
+			if ($file === false || !$this->validate_pdf_file($file)) {
+				if (!empty($file) && file_exists($file)) {
+					@unlink($file); // Remove invalid file
+				}
+				
+				woocomm_invfox__trace("PDF download failed or validation failed for resource: " . $resource, "PDF Error");
 				
 				// Add admin notice about the failure
 				$notices = get_option('cebelcabiz_deferred_admin_notices', array());
-				$notices[] = "NAPAKA: Ni bilo mogoče prenesti PDF dokumenta (" . $resource . "). Preverite povezavo s strežnikom Čebelca BIZ.";
+				$notices[] = "NAPAKA: Ni bilo mogoče prenesti veljavnega PDF dokumenta (" . $resource . "). Preverite povezavo s strežnikom Čebelca BIZ.";
 				update_option('cebelcabiz_deferred_admin_notices', $notices);
 				
-				return false;
-			}
-
-			clearstatcache(true, $file);
-			$file_size = file_exists($file) ? (int) filesize($file) : 0;
-			if ($file_size <= 0) {
-				woocomm_invfox__trace("Downloaded PDF is missing or 0B for resource: " . $resource . ", file: " . $file, "PDF Error");
-				$notices = get_option('cebelcabiz_deferred_admin_notices', array());
-				$notices[] = "NAPAKA: PDF dokument (" . $resource . ") je prazen ali manjka. Možen vzrok je varnostni filter (npr. Imunify360/ModSecurity).";
-				update_option('cebelcabiz_deferred_admin_notices', $notices);
-				if (file_exists($file)) {
-					@unlink($file);
-				}
 				return false;
 			}
 			
