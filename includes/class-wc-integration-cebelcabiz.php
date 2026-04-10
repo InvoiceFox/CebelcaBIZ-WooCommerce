@@ -272,17 +272,17 @@ if ( ! class_exists( 'WC_Integration_Cebelcabiz' ) && class_exists( 'WC_Integrat
             echo '<em>' . __('Uporabite lahko ID ali naziv načina plačila. Pretvorba razlikuje med velikimi in malimi črkami.', 'woocommerce-integration-demo') . '</em>';
             echo '</div>';
             echo '<div style="font-family: monospace; font-size: 13px; line-height: 2;">';
-            echo '<div><strong>Stripe (ID):</strong> <code>stripe->Kreditna kartica</code></div>';
-            echo '<div><strong>Stripe (naziv):</strong> <code>Credit Card (Stripe)->Kreditna kartica</code></div>';
+            echo '<div><strong>Stripe (ID):</strong> <code>stripe->Kartica</code></div>';
+            echo '<div><strong>Stripe (naziv):</strong> <code>Credit Card (Stripe)->Kartica</code></div>';
             echo '<div><strong>PayPal:</strong> <code>paypal->PayPal</code></div>';
             echo '<div><strong>Bančno nakazilo:</strong> <code>bacs->Bančno nakazilo</code></div>';
             echo '<div><strong>Direktno bančno nakazilo:</strong> <code>Direct Bank Transfer->Bančno nakazilo</code></div>';
-            echo '<div><strong>Gotovina ob dostavi:</strong> <code>cod->Gotovina ob dostavi</code></div>';
-            echo '<div><strong>Univerzalni vnos (vse):</strong> <code>*->Splošno plačilo</code></div>';
+            echo '<div><strong>Gotovina ob dostavi:</strong> <code>cod->Po povzetju</code></div>';
+            echo '<!--div><strong>Univerzalni vnos (vse):</strong> <code>*->Splošno plačilo</code></div-->';
             echo '</div>';
             echo '<div style="margin-top: 10px; padding: 10px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 3px;">';
             echo '<strong>' . __('Kombiniran primer:', 'woocommerce-integration-demo') . '</strong><br>';
-            echo '<code style="font-size: 12px;">stripe->Kreditna kartica;paypal->PayPal;bacs->Bančno nakazilo;cod->Gotovina ob dostavi</code>';
+            echo '<code style="font-size: 12px;">stripe->Lartica;paypal->PayPal;bacs->Bančno nakazilo;cod->Po povzetju</code>';
             echo '</div>';
             echo '</div>';
         }
@@ -314,7 +314,7 @@ if ( ! class_exists( 'WC_Integration_Cebelcabiz' ) && class_exists( 'WC_Integrat
                 'payment_methods_map' => array(
                     'title'             => __( 'Pretvorba načinov plačila', 'woocommerce-integration-demo' ),
                     'type'              => 'text',
-                    'default'           => 'stripe->Kreditna kartica;paypal->PayPal;bacs->Bančno nakazilo;cod->Gotovina ob dostavi',
+                    'default'           => 'stripe->Kreditna kartica;paypal->PayPal;bacs->Bančno nakazilo;cod->Po povzetju',
                     'description'       => __( 'Tu v obliki "Način plačila woocomerce->Način plačila Čebelca;...." vnesete kako se naj načini plačila v vašem Woocommerce pretvorijo v načina plačila na Čebelci. Uporabite lahko ID ali ime načina plačila.', 'woocommerce-integration-demo' ),
                 ),
 

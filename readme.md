@@ -79,33 +79,8 @@ woocommerce_id->cebelca_nacin;drugi_id->drugi_nacin
 
 **Primer:**
 ```
-stripe->Kartica;paypal->PayPal;bacs->Bančno nakazilo;cod->Gotovina ob dostavi
+stripe->Kartica;paypal->PayPal;bacs->Bančno nakazilo;cod->Po povzetju
 ```
-
-### Pogosti WooCommerce plačilni načini
-
-| Gateway | ID (priporočeno) | Pogosti nazivi |
-|---------|------------------|----------------|
-| Stripe | `stripe` | "Visa debit card", "MasterCard", "Kreditna kartica" |
-| PayPal Standard | `paypal` | "PayPal" |
-| PayPal Payments | `ppcp-gateway` | "PayPal" |
-| Bančno nakazilo | `bacs` | "Direct Bank Transfer", "Bančno nakazilo" |
-| Gotovina ob dostavi | `cod` | "Cash on Delivery", "Gotovina ob dostavi" |
-| Ček | `cheque` | "Check Payments", "Plačilo s čekom" |
-| Square | `square_credit_card` | "Square" |
-
-### Razpoložljivi načini plačila v Čebelci BIZ
-
-- **Bančno nakazilo** (ID: 1)
-- **Gotovina** (ID: 2) 
-- **Kartica** (ID: 3)
-- **Darilni bon** (ID: 4)
-- **PayPal** (ID: 5)
-- **Dobropis** (ID: 6)
-- **Kompenzacija** (ID: 7)
-- **Turistični bon** (ID: 8)
-- **BON21** (ID: 9)
-- **Po povzetju** (ID: 10)
 
 ### Pomoč pri odkrivanju plačilnih načinov
 
