@@ -203,49 +203,65 @@ if ( ! class_exists( 'WC_Integration_Cebelcabiz' ) && class_exists( 'WC_Integrat
             // Show available payment gateways
             echo '<div style="margin-bottom: 15px;">';
             echo '<h5>' . __('Razpoložljivi načini plačila (WooCommerce gateways):', 'woocommerce-integration-demo') . '</h5>';
-            if (class_exists('WC')) {
-                $available_gateways = WC()->payment_gateways->payment_gateways();
-                if (!empty($available_gateways)) {
-                    foreach($available_gateways as $id => $gateway) {
-                        $enabled_status = $gateway->enabled === 'yes' ? __('(vklopljen)', 'woocommerce-integration-demo') : __('(izklopljen)', 'woocommerce-integration-demo');
-                        echo '<div style="margin: 5px 0; font-family: monospace;">';
-                        echo '<strong>ID:</strong> <code>' . esc_html($id) . '</code> | ';
-                        echo '<strong>Naziv:</strong> ' . esc_html($gateway->title) . ' ' . esc_html($enabled_status);
-                        echo '</div>';
+            
+            // Better WooCommerce availability check - check for both class and function
+            if (function_exists('WC') && is_callable('WC')) {
+                try {
+                    $available_gateways = WC()->payment_gateways->payment_gateways();
+                    if (!empty($available_gateways)) {
+                        foreach($available_gateways as $id => $gateway) {
+                            $enabled_status = $gateway->enabled === 'yes' ? __('(vklopljen)', 'woocommerce-integration-demo') : __('(izklopljen)', 'woocommerce-integration-demo');
+                            echo '<div style="margin: 5px 0; font-family: monospace;">';
+                            echo '<strong>ID:</strong> <code>' . esc_html($id) . '</code> | ';
+                            echo '<strong>Naziv:</strong> ' . esc_html($gateway->title) . ' ' . esc_html($enabled_status);
+                            echo '</div>';
+                        }
+                    } else {
+                        echo '<p>' . __('Ni najdenih načinov plačila.', 'woocommerce-integration-demo') . '</p>';
                     }
-                } else {
-                    echo '<p>' . __('Ni najdenih načinov plačila.', 'woocommerce-integration-demo') . '</p>';
+                } catch (Exception $e) {
+                    echo '<p>' . __('Napaka pri nalaganju načinov plačila: ', 'woocommerce-integration-demo') . esc_html($e->getMessage()) . '</p>';
                 }
             } else {
-                echo '<p>' . __('WooCommerce ni naložen.', 'woocommerce-integration-demo') . '</p>';
+                echo '<div class="notice notice-warning" style="margin: 10px 0; padding: 10px; background: #fff3cd; border: 1px solid #ffeaa7;">';
+                echo '<p>' . __('WooCommerce še ni popolnoma naložen. Osvežite stran ali preverite, če je WooCommerce aktiviran.', 'woocommerce-integration-demo') . '</p>';
+                echo '</div>';
             }
             echo '</div>';
             
             // Show payment methods from recent orders
             echo '<div>';
             echo '<h5>' . __('Načini plačila iz zadnjih naročil:', 'woocommerce-integration-demo') . '</h5>';
-            if (function_exists('wc_get_orders')) {
-                $orders = wc_get_orders(array('limit' => 50, 'status' => array('wc-processing', 'wc-completed')));
-                $methods_found = array();
-                
-                foreach($orders as $order) {
-                    $method_id = $order->get_payment_method();
-                    $method_title = $order->get_payment_method_title();
-                    if (!empty($method_id) && !isset($methods_found[$method_id])) {
-                        $methods_found[$method_id] = $method_title;
+            
+            // Check if WooCommerce functions are available
+            if (function_exists('wc_get_orders') && function_exists('WC') && is_callable('WC')) {
+                try {
+                    $orders = wc_get_orders(array('limit' => 50, 'status' => array('wc-processing', 'wc-completed')));
+                    $methods_found = array();
+                    
+                    foreach($orders as $order) {
+                        $method_id = $order->get_payment_method();
+                        $method_title = $order->get_payment_method_title();
+                        if (!empty($method_id) && !isset($methods_found[$method_id])) {
+                            $methods_found[$method_id] = $method_title;
+                        }
                     }
-                }
-                
-                if (!empty($methods_found)) {
-                    foreach($methods_found as $id => $title) {
-                        echo '<div style="margin: 5px 0; font-family: monospace;">';
-                        echo '<strong>ID:</strong> <code>' . esc_html($id) . '</code> | ';
-                        echo '<strong>Naziv:</strong> ' . esc_html($title);
-                        echo '</div>';
+                    
+                    if (!empty($methods_found)) {
+                        foreach($methods_found as $id => $title) {
+                            echo '<div style="margin: 5px 0; font-family: monospace;">';
+                            echo '<strong>ID:</strong> <code>' . esc_html($id) . '</code> | ';
+                            echo '<strong>Naziv:</strong> ' . esc_html($title);
+                            echo '</div>';
+                        }
+                    } else {
+                        echo '<p>' . __('Ni najdenih načinov plačila v zadnjih naročilih.', 'woocommerce-integration-demo') . '</p>';
                     }
-                } else {
-                    echo '<p>' . __('Ni najdenih načinov plačila v zadnjih naročilih.', 'woocommerce-integration-demo') . '</p>';
+                } catch (Exception $e) {
+                    echo '<p>' . __('Napaka pri nalaganju naročil: ', 'woocommerce-integration-demo') . esc_html($e->getMessage()) . '</p>';
                 }
+            } else {
+                echo '<p>' . __('WooCommerce funkcije za naročila niso na voljo.', 'woocommerce-integration-demo') . '</p>';
             }
             echo '</div>';
             
