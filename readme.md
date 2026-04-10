@@ -10,7 +10,13 @@ Dodatek je na voljo brezplačno na spletni strani Cebelca BIZ WooCommerce na Git
 
 ## Status
 
-Dodatek se že dlje časa uporablja v mnogih spletnih trgovinah.
+Dodatek se uspešno uporablja v mnogih spletnih trgovinah. **Trenutna verzija: 0.9.9** (april 2026).
+
+Zadnje izboljšave vključujejo:
+- Naprednejše mapiranje plačilnih načinov z avtomatskim odkrivanjem
+- Izboljšano varnost in validacijo PDF datotek  
+- Boljšo podporo za večjezične strani
+- Podrobnejše beleženje dogodkov za lažje reševanje težav
 
 ## Navodila za namestitev
 
@@ -38,7 +44,7 @@ Po aktivaciji vtičnika se bo v WooCommerce nastavitvah pojavila nova integracij
 4. V WordPress nadzorni plošči pojdite na **WooCommerce > Nastavitve > Integracije > Čebelca BIZ**.
 5. Vnesite API ključ v polje **Skrivni API ključ**.
 6. Nastavite **Možne davčne stopnje** - vnesite vse davčne stopnje, ki jih uporabljate v vaši trgovini, ločene z vejicami (npr. "0, 5, 9.5, 22").
-7. Nastavite **Pretvorbo načinov plačila** v obliki "Način plačila WooCommerce->Način plačila Čebelca;..." (npr. "PayPal->PayPal;Gotovina->Gotovina").
+7. Nastavite **Pretvorbo načinov plačila** (podrobneje opisano v razdelku "Nastavitve plačilnih načinov" spodaj).
 8. Shranite nastavitve.
 
 ### Nastavitve akcij ob spremembi statusa
@@ -58,13 +64,93 @@ Računi se kreirajo ob spremembi statusa naročila. Priporočljivo je, da se ra�
 
 Za začetek je priporočljivo izbrati **Ustvari osnutek računa** pri statusu **Zaključeno**.
 
+## Nastavitve plačilnih načinov
+
+Plugin omogoča avtomatsko pretvorbo načinov plačila iz WooCommerce v ekvivalente v Čebelci BIZ. To je pomembno za pravilno beleženje plačil in davčno potrjevanje.
+
+### Osnove mapiranja
+
+Pretvorba deluje z uporabo ID-ja ali naziva plačilnega načina iz WooCommerce. **Priporočamo uporabo ID-jev**, ker so stabilni ne glede na jezik ali nastavitve.
+
+**Format vnosa:**
+```
+woocommerce_id->cebelca_nacin;drugi_id->drugi_nacin
+```
+
+**Primer:**
+```
+stripe->Kartica;paypal->PayPal;bacs->Bančno nakazilo;cod->Gotovina ob dostavi
+```
+
+### Pogosti WooCommerce plačilni načini
+
+| Gateway | ID (priporočeno) | Pogosti nazivi |
+|---------|------------------|----------------|
+| Stripe | `stripe` | "Visa debit card", "MasterCard", "Kreditna kartica" |
+| PayPal Standard | `paypal` | "PayPal" |
+| PayPal Payments | `ppcp-gateway` | "PayPal" |
+| Bančno nakazilo | `bacs` | "Direct Bank Transfer", "Bančno nakazilo" |
+| Gotovina ob dostavi | `cod` | "Cash on Delivery", "Gotovina ob dostavi" |
+| Ček | `cheque` | "Check Payments", "Plačilo s čekom" |
+| Square | `square_credit_card` | "Square" |
+
+### Razpoložljivi načini plačila v Čebelci BIZ
+
+- **Bančno nakazilo** (ID: 1)
+- **Gotovina** (ID: 2) 
+- **Kartica** (ID: 3)
+- **Darilni bon** (ID: 4)
+- **PayPal** (ID: 5)
+- **Dobropis** (ID: 6)
+- **Kompenzacija** (ID: 7)
+- **Turistični bon** (ID: 8)
+- **BON21** (ID: 9)
+- **Po povzetju** (ID: 10)
+
+### Pomoč pri odkrivanju plačilnih načinov
+
+V nastavitvah vtičnika (WooCommerce > Nastavitve > Integracije > Čebelca BIZ) je na voljo pomočnik, ki vam prikaže:
+- Vse nameščene plačilne načine v WooCommerce z njihovimi ID-ji
+- Plačilne načine iz zadnjih naročil
+- Priporočene nastavitve za pogoste kombinacije
+
+### Privzete nastavitve
+
+Plugin ima nastavljene naslednje privzete pretvorbe:
+```
+stripe->Kartica;paypal->PayPal;bacs->Bančno nakazilo;cod->Gotovina ob dostavi
+```
+
+### Reševanje težav
+
+**Napaka: "Način plačila manjka v nastavitvah pretvorbe"**
+1. Preverite dnevnik dogodkov za točen ID plačilnega načina
+2. Uporabite pomoč pri odkrivanju plačilnih načinov v nastavitvah
+3. Dodajte manjkajoči način v mapiranje
+
+**Preverjanje verzije vtičnika:**
+- Trenutna verzija: 0.9.9
+- Preverite v WordPress > Vtičniki > Nameščeni vtičniki
+- Če imate starejšo verzijo, najprej nadgradite na najnovejšo
+
+**Primer za Stripe z različnimi kartičnimi načini:**
+```
+stripe->Kartica;visa->Kartica;mastercard->Kartica
+```
+
+**Preverjanje trenutnih nastavitev:**
+1. Aktivirajte beleženje dogodkov v nastavitvah
+2. Naredite testno naročilo
+3. Preglejte dnevnik za dejanske ID-je plačilnih načinov
+4. Posodobite mapiranje na podlagi ugotovitev
+
 ## Nastavitve davčne blagajne (fiskalizacija)
 
 Če želite omogočiti davčno potrjevanje računov, sledite naslednjim korakom:
 
 1. V nastavitvah Čebelca BIZ integracije poiščite razdelek **DAVČNA BLAGAJNA**.
 2. Označite polje **Aktiviraj davčno potrjevanje**.
-3. Nastavite **Načini plačila kjer dav. potrdi** - vnesite načine plačila, pri katerih naj se račun davčno potrdi, ločene z vejicami. Če vnesete "*", se bodo potrjevali vsi načini plačila.
+3. Nastavite **Načini plačila kjer dav. potrdi** - vnesite ID-je ali nazive načinov plačila (iz WooCommerce), pri katerih naj se račun davčno potrdi, ločene z vejicami. Če vnesete "*", se bodo potrjevali vsi načini plačila. Primer: `stripe,cod,bacs` ali `*` za vse.
 4. Vnesite **ID prostora in blagajne** - številski podatek, ki ga najdete na strani Podatki & ID-ji v Čebelci BIZ.
 5. Vnesite **Osebna davčna številka izdajatelja** - davčna številka osebe, ki račune izdaja.
 6. Vnesite **Osebni naziv izdajatelja** - ime osebe, ki račune izdaja.
@@ -103,9 +189,24 @@ Za lažje odkrivanje napak lahko aktivirate beleženje dogodkov:
 2. Dnevnik se nahaja v: `wp-content/cebelcabiz-debug.log`.
 3. Dnevnik lahko pregledate, počistite ali prenesete v razdelku **Debug Log** na dnu strani z nastavitvami.
 
-### Reševanje težav z e-pošto ali priponkami
+### Reševanje posebnih težav
 
+**Napake pri bančnem nakazilu (status "Zadržano")**
+Če se pri bančnem nakazilu pojavljajo napake:
+1. Preverite nastavitve v razdelku "AKCIJE OB SPREMEMBAH STATUSOV" 
+2. Za status "Zadržano" priporočamo nastavitev "Brez akcije" ali "Ustvari osnutek računa"
+3. Računi naj se kreirajo šele pri statusu "Zaključeno" ali "V obdelavi"
+
+**Težave z e-pošto ali priponkami**
 Če imate težave s pošiljanjem e-pošte s priponkami računov ali predračunov, namestite dodatek [cebelcabiz-email-logger](https://github.com/InvoiceFox/cebelcabiz-email-logger). Ta dodatek omogoča beleženje vseh e-poštnih sporočil, ki jih pošilja WooCommerce, kar vam pomaga pri odkrivanju in odpravljanju težav s pošiljanjem e-pošte.
+
+### Varnost PDF datotek
+
+Plugin avtomatsko zagotavlja varnost prenesenih PDF računov:
+- Mapa z računi je zaščitena pred nepooblaščenim dostopom
+- PDF datoteke so validirane ob prenosu
+- Neveljavne ali poškodovane datoteke se avtomatsko odstranijo
+- Vsi prenosi so beleženi v dnevniku dogodkov
 
 ## Navodila za razvijalce
 
@@ -143,6 +244,8 @@ Za pakiranje vtičnika v ZIP datoteko uporabite priloženo skripto `package-plug
 3. Pošljite pull request z opisom sprememb.
 
 ## Dnevnik sprememb
+
+**10.04.2026** Izboljšano mapiranje plačilnih načinov z avtomatskim odkrivanjem, privzetimi nastavitvami za pogoste načine plačila, izboljšano validacijo PDF datotek in povečano varnost
 
 **26.02.2026** Izbira jezika pri nastavitvah, določena ali avtomatska na podlagi naročila in multilang pluginov. Pri načinih plačila sedaj delujejo tudi IDji plačil
 
