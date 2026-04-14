@@ -65,8 +65,6 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
     
     // Initialize log viewer
     $log_viewer = new WC_Cebelcabiz_Log_Viewer();
-                                           
-    $conf = null; // Will be initialized in the constructor
     
 	/**
 	 * Main plugin class
@@ -473,7 +471,9 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 			}
 			
 			try {
-				$this->_make_document_in_invoicefox($order, "invoice_draft");
+				// Extract order ID since _make_document_in_invoicefox expects an ID, not an object
+				$order_id = ($order instanceof WC_Order) ? $order->get_id() : $order;
+				$this->_make_document_in_invoicefox($order_id, "invoice_draft");
 			} catch (Exception $e) {
 				$this->add_admin_notice("NAPAKA: " . $e->getMessage());
 				woocomm_invfox__trace($e->getMessage(), "Error in process_custom_order_action_invoice");
@@ -493,7 +493,9 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 			}
 			
 			try {
-				$this->_make_document_in_invoicefox($order, "proforma");
+				// Extract order ID since _make_document_in_invoicefox expects an ID, not an object
+				$order_id = ($order instanceof WC_Order) ? $order->get_id() : $order;
+				$this->_make_document_in_invoicefox($order_id, "proforma");
 			} catch (Exception $e) {
 				$this->add_admin_notice("NAPAKA: " . $e->getMessage());
 				woocomm_invfox__trace($e->getMessage(), "Error in process_custom_order_action_proforma");
@@ -513,7 +515,9 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 			}
 			
 			try {
-				$this->_make_document_in_invoicefox($order, "advance_draft");
+				// Extract order ID since _make_document_in_invoicefox expects an ID, not an object
+				$order_id = ($order instanceof WC_Order) ? $order->get_id() : $order;
+				$this->_make_document_in_invoicefox($order_id, "advance_draft");
 			} catch (Exception $e) {
 				$this->add_admin_notice("NAPAKA: " . $e->getMessage());
 				woocomm_invfox__trace($e->getMessage(), "Error in process_custom_order_action_advance");
@@ -533,7 +537,9 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 			}
 			
 			try {
-				$this->_make_document_in_invoicefox($order, "inventory");
+				// Extract order ID since _make_document_in_invoicefox expects an ID, not an object
+				$order_id = ($order instanceof WC_Order) ? $order->get_id() : $order;
+				$this->_make_document_in_invoicefox($order_id, "inventory");
 			} catch (Exception $e) {
 				$this->add_admin_notice("NAPAKA: " . $e->getMessage());
 				woocomm_invfox__trace($e->getMessage(), "Error in process_custom_order_action_invt_sale");
@@ -643,6 +649,15 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 			if (!current_user_can('manage_woocommerce')) {
 				woocomm_invfox__trace("Permission denied: User cannot manage WooCommerce", "Security");
 				return;
+			}
+			
+			// Ensure we have an order object
+			if (!($order instanceof WC_Order)) {
+				$order = wc_get_order($order);
+				if (!$order) {
+					woocomm_invfox__trace("Invalid order provided to check_invt_items", "Error");
+					return;
+				}
 			}
 			
 			$items = array();
@@ -1172,7 +1187,8 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 							*/
 							
 							add_post_meta( $order->get_id(), 'invoicefox_attached_pdf', $filename );
-							woocomm_invfox__trace("Invoice PDF downloaded successfully: " . $filename . " (" . $filename_size . " bytes)", "PDF");
+							$file_size = file_exists($filename) ? filesize($filename) : 0;
+							woocomm_invfox__trace("Invoice PDF downloaded successfully: " . $filename . " (" . $file_size . " bytes)", "PDF");
 						}
 					} else {
 						$notices   = get_option( 'cebelcabiz_deferred_admin_notices', array() );
@@ -1368,6 +1384,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 			// Store the PDF path with the resource-specific meta key
 			update_post_meta( $order->get_id(), $meta_key, $file );
 			woocomm_invfox__trace("Saved new PDF path to post meta with key: " . $meta_key, "PDF");
+			$file_size = file_exists($file) ? filesize($file) : 0;
 			woocomm_invfox__trace("PDF download completed (" . $file_size . " bytes)", "PDF");
 
 			return $file;
@@ -1489,7 +1506,7 @@ function woocomm_invfox_get_attributes( $product ) {
 
             if ( $attribute['is_taxonomy'] ) {
 
-                $formatted_attributes[ $attribute_label ] = implode( ', ', wc_get_product_terms( $product->id, $attribute['name'], array(
+                $formatted_attributes[ $attribute_label ] = implode( ', ', wc_get_product_terms( $product->get_id(), $attribute['name'], array(
                     'fields' => 'names'
                 ) ) );
 
@@ -1763,21 +1780,36 @@ function calculatePreciseSloVAT($netPrice, $vatValue, $vatLevels) {
 }
 
 
-function my_api_endpoint_callback() {
-    $sku = $_GET['sku'];
-    $quantity = $_GET['quantity'];
-    // Your code to update inventory quantity based on the provided SKU and quantity
-}
+// REMOVED: Unsafe function that used unsanitized $_GET parameters
+// If inventory update functionality is needed, implement it through
+// proper WordPress REST API endpoints with authentication and sanitization
 
-function get_products_by_status() {
-    update_product_quantity(array( "CHI1" => 4321 ));
-    return "!GET PRODUCTS BY STATUS TEST!";
+function get_products_by_status($request) {
+    // Check user permissions
+    if (!current_user_can('manage_woocommerce')) {
+        return new WP_Error('rest_forbidden', 'You cannot access this resource.', array('status' => 401));
+    }
+    
+    $status = sanitize_text_field($request['status']);
+    
+    // TODO: Implement actual product status retrieval logic
+    // This is a placeholder implementation
+    $products = array();
+    
+    return rest_ensure_response(array(
+        'status' => $status,
+        'products' => $products,
+        'message' => 'Product status query completed'
+    ));
 }
 
 function create_custom_endpoint() {
     register_rest_route( 'custom', '/products/(?P<status>\w+)', array(
         'methods'  => 'GET',
         'callback' => 'get_products_by_status',
+        'permission_callback' => function() {
+            return current_user_can('manage_woocommerce');
+        },
         'args'     => array(
             'status' => array(
                 'required' => true,
