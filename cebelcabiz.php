@@ -845,28 +845,35 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 			$body2     = array();
 
 			foreach ( $order->get_items() as $item ) {
-				if ( 'line_item' == $item['type'] ) {
-					$product        = $item->get_product(); // $order->get_product_from_item( $item );
-					woocomm_invfox__trace("Processing product: " . $product->get_name() . " (SKU: " . $product->get_sku() . ")", "Product");
-
-					$mu_ = $product->get_meta( 'unit_of_measurement', true );
-					$mu = $mu_ ? $mu_ : "";
-
-					$price = wc_get_price_excluding_tax( $product );
-					//$price = $product->get_price_excluding_tax();
+				if ( $item->is_type( 'line_item' ) ) {
+					$product = $item->get_product(); // Still needed for SKU and meta data
+					
+					// Use order item snapshot data instead of product catalog data
 					$quantity = $item->get_quantity();
-					$subtotal = $item->get_total(); //  + $item->get_subtotal_tax();
-					if ($quantity != 0) { 
-						$discounted_price = $subtotal / $quantity;
+					$line_subtotal_net = $item->get_subtotal(); // Total for this line before discount, excluding tax
+					$line_total_net = $item->get_total(); // Total for this line after discount, excluding tax
+					
+					// Calculate unit price from order snapshot (not catalog)
+					if ( $quantity > 0 ) {
+						$price = $line_subtotal_net / $quantity; // Unit price before discounts (snapshot)
+						$discounted_price = $line_total_net / $quantity; // Unit price after discounts (snapshot)
 					} else {
+						$price = 0;
 						$discounted_price = 0;
 					}
-					if ($price != 0) {
-						$discount_percentage = round(100 - ( $discounted_price / $price ) * 100, 2);
-					} else {
-						$discount_percentage = 0;
+					
+					// Calculate discount percentage based on order snapshot data
+					$discount_percentage = 0;
+					if ( $line_subtotal_net > 0 ) {
+						$discount_percentage = round( 100 - ( $line_total_net / $line_subtotal_net ) * 100, 2 );
 					}
-					woocomm_invfox__trace("Price: $price, Quantity: $quantity, Subtotal: $subtotal", "Product");
+					
+					// Get unit of measurement from product (if available)
+					$mu_ = $product ? $product->get_meta( 'unit_of_measurement', true ) : '';
+					$mu = $mu_ ? $mu_ : "";
+
+					woocomm_invfox__trace("Processing item: " . $item->get_name() . " (SKU: " . ($product ? $product->get_sku() : 'N/A') . ")", "Product");
+					woocomm_invfox__trace("Price: $price, Quantity: $quantity, Line Subtotal: $line_subtotal_net, Line Total: $line_total_net", "Product");
 					woocomm_invfox__trace("Discounted price: $discounted_price, Discount percentage: $discount_percentage%", "Product");
 				
 					$attributes_str = woocomm_invfox_get_item_attributes( $item );
@@ -876,15 +883,15 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 						$vatLevelsOK = false;
 					}
 					$body2[]        = array(
-						'code'     => $product->get_sku(),
+						'code'     => $product ? $product->get_sku() : '',
 						'title'    => 
-						($this->conf['add_sku_to_line'] == "yes" && $this->conf['document_to_make'] != 'inventory' ? $product->get_sku(). ": " : "" ).
-						$product->get_title() .
+						($this->conf['add_sku_to_line'] == "yes" && $this->conf['document_to_make'] != 'inventory' && $product ? $product->get_sku(). ": " : "" ).
+						$item->get_name() . // Use item name instead of product title (captures variations and custom names)
 						( $attributes_str ? "\n" . $attributes_str : "" ) . // ( $this->conf['add_post_content_in_item_descr'] == "yes" ? "\n" . $product->get_content : "" ),
 						( $variation_str ? "\n" . $variation_str : "" ), // ( $this->conf['add_post_content_in_item_descr'] == "yes" ? "\n" . $product->get_content : "" ),q
 						'qty'      => $quantity,
 						'mu'       => $mu,
-						'price'    => round($price, $this->conf['round_calculated_netprice_to']), // ,round_calculated_netprice_to), // round( $item['line_total'] / $item['qty'], $this->conf['round_calculated_netprice_to'] ),
+						'price'    => round($price, $this->conf['round_calculated_netprice_to']), // Use snapshot price, not catalog price
 						'vat'      => $vatLevel,
 						'discount' => $discount_percentage
 					);
