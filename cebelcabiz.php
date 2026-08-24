@@ -3,7 +3,7 @@
  * Plugin Name: Cebelca BIZ
  * Plugin URI:
  * Description: Connects WooCommerce to Cebelca.biz for invoicing and optionally inventory
- * Version: 0.9.10
+ * Version: 0.9.11
  * Author: JankoM
  * Author URI: https://github.com/refaktor/
  * Developer: Janko M.
@@ -17,9 +17,27 @@
 
 if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 
+	function woocomm_invfox__log_dir() {
+	    $upload = wp_upload_dir(null, false);
+	    $basedir = (is_array($upload) && !empty($upload['basedir']))
+	        ? $upload['basedir'] : WP_CONTENT_DIR . '/uploads';
+
+	    return rtrim($basedir, '/\\') . '/cebelcabiz-logs';
+	}
+
+	function woocomm_invfox__log_file( $suffix = '' ) {
+	    $seed = defined('AUTH_KEY') ? AUTH_KEY : ABSPATH;
+	    $hash = substr(md5('cebelcabiz-log' . $seed), 0, 16);
+
+	    return woocomm_invfox__log_dir() . '/cebelcabiz-debug-' . $hash
+	         . ('' === $suffix ? '' : '-' . $suffix) . '.log';
+	}
+
+	define("WOOCOMM_INVFOX_LOG_FILE", woocomm_invfox__log_file());
+
     // Constants for plugin configuration
-    define("WOOCOMM_INVFOX_LOG_FILE", WP_CONTENT_DIR . '/cebelcabiz-debug.log');
-    define("WOOCOMM_INVFOX_VERSION", '0.9.10');
+    // define("WOOCOMM_INVFOX_LOG_FILE", WP_CONTENT_DIR . '/cebelcabiz-debug.log');
+    define("WOOCOMM_INVFOX_VERSION", '0.9.11');
     
     // Debug mode will be set based on settings
     $debug_enabled = false;
@@ -43,17 +61,16 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
             $context_prefix = $context ? "[$context] " : "";
             $message = "WC_Cebelcabiz: " . $context_prefix . $formatted_x;
             
-            // Log to PHP error log
-            error_log($message);
-            
-            // Also log to a dedicated file for easier debugging
+            // Log only to the plugin's protected log file (do not mirror to global PHP error_log)
             if (defined('WOOCOMM_INVFOX_LOG_FILE')) {
                 $timestamp = date('[Y-m-d H:i:s]');
-                file_put_contents(
-                    WOOCOMM_INVFOX_LOG_FILE, 
-                    $timestamp . ' ' . $message . PHP_EOL, 
-                    FILE_APPEND
-                );
+                @file_put_contents(WOOCOMM_INVFOX_LOG_FILE, $timestamp . ' ' . $message . PHP_EOL, FILE_APPEND);
+            } else {
+                static $warned = false;
+                if (!$warned) {
+                    $warned = true;
+                    error_log("WC_Cebelcabiz: debug logging is on but the log file cannot be written.");
+                }
             }
         }
 	}
@@ -248,14 +265,9 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
          */
         private static function secure_invoices_directory($path) {
             $htaccess_file = $path . '/.htaccess';
-            $htaccess_content = "# Cebelca BIZ - Deny direct access to invoice PDFs\n";
-            $htaccess_content .= "Order Deny,Allow\n";
-            $htaccess_content .= "Deny from all\n";
-            $htaccess_content .= "\n# Allow WordPress to serve files through proper authentication\n";
-            $htaccess_content .= "<Files ~ \"\\.(pdf)$\">\n";
-            $htaccess_content .= "    Order Deny,Allow\n";
-            $htaccess_content .= "    Deny from all\n";
-            $htaccess_content .= "</Files>\n";
+            $htaccess_content  = "# Cebelca BIZ - Deny direct access to invoice PDFs\n";
+            $htaccess_content .= "<IfModule mod_authz_core.c>\n\tRequire all denied\n</IfModule>\n";
+            $htaccess_content .= "<IfModule !mod_authz_core.c>\n\tOrder Deny,Allow\n\tDeny from all\n</IfModule>\n";
             
             if (!file_exists($htaccess_file)) {
                 $result = file_put_contents($htaccess_file, $htaccess_content);
@@ -474,7 +486,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 				// Extract order ID since _make_document_in_invoicefox expects an ID, not an object
 				$order_id = ($order instanceof WC_Order) ? $order->get_id() : $order;
 				$this->_make_document_in_invoicefox($order_id, "invoice_draft");
-			} catch (Exception $e) {
+			} catch (Throwable $e) {
 				$this->add_admin_notice("NAPAKA: " . $e->getMessage());
 				woocomm_invfox__trace($e->getMessage(), "Error in process_custom_order_action_invoice");
 			}
@@ -496,7 +508,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 				// Extract order ID since _make_document_in_invoicefox expects an ID, not an object
 				$order_id = ($order instanceof WC_Order) ? $order->get_id() : $order;
 				$this->_make_document_in_invoicefox($order_id, "proforma");
-			} catch (Exception $e) {
+			} catch (Throwable $e) {
 				$this->add_admin_notice("NAPAKA: " . $e->getMessage());
 				woocomm_invfox__trace($e->getMessage(), "Error in process_custom_order_action_proforma");
 			}
@@ -518,7 +530,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 				// Extract order ID since _make_document_in_invoicefox expects an ID, not an object
 				$order_id = ($order instanceof WC_Order) ? $order->get_id() : $order;
 				$this->_make_document_in_invoicefox($order_id, "advance_draft");
-			} catch (Exception $e) {
+			} catch (Throwable $e) {
 				$this->add_admin_notice("NAPAKA: " . $e->getMessage());
 				woocomm_invfox__trace($e->getMessage(), "Error in process_custom_order_action_advance");
 			}
@@ -540,7 +552,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 				// Extract order ID since _make_document_in_invoicefox expects an ID, not an object
 				$order_id = ($order instanceof WC_Order) ? $order->get_id() : $order;
 				$this->_make_document_in_invoicefox($order_id, "inventory");
-			} catch (Exception $e) {
+			} catch (Throwable $e) {
 				$this->add_admin_notice("NAPAKA: " . $e->getMessage());
 				woocomm_invfox__trace($e->getMessage(), "Error in process_custom_order_action_invt_sale");
 			}
@@ -560,7 +572,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 			
 			try {
 				$this->_make_document_in_invoicefox($order, "invoice_complete");
-			} catch (Exception $e) {
+			} catch (Throwable $e) {
 				$this->add_admin_notice("NAPAKA: " . $e->getMessage());
 				woocomm_invfox__trace($e->getMessage(), "Error in process_custom_order_action_full_invoice");
 			}
@@ -581,7 +593,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 			
 			try {
 				return $this->_woocommerce_order_invoice_pdf($order, "invoice-sent");
-			} catch (Exception $e) {
+			} catch (Throwable $e) {
 				$this->add_admin_notice("NAPAKA: " . $e->getMessage());
 				woocomm_invfox__trace($e->getMessage(), "Error in process_invoice_download");
 				return false;
@@ -638,7 +650,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 				
 				$this->add_admin_notice("Plačilo zabeleženo");
 				
-			} catch (Exception $e) {
+			} catch (Throwable $e) {
 				$this->add_admin_notice("NAPAKA: " . esc_html($e->getMessage()));
 				woocomm_invfox__trace($e->getMessage(), "Error in process_custom_order_action_mark_invoice_paid");
 			}
@@ -937,6 +949,7 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 				
 				// Get the precise VAT rate from the function that can handle small inaccuracies
 				$shipping_vat_rate = calculatePreciseSloVAT($shipping_total, $shipping_tax, $vatLevels);
+                if ($shipping_vat_rate < 0) { $vatLevelsOK = false; }
 				
 				// Calculate precise net price from the rounded gross using the correct VAT rate
 				if ($gross_shipping > 0 && $shipping_vat_rate > 0) {
@@ -1481,7 +1494,8 @@ if ( ! class_exists( 'WC_Cebelcabiz' ) ) {
 				return $attachments;
 
 			} else {
-				return array();
+				// Keep existing attachments from other plugins
+				return $attachments;
 			}
 		}
     }   
@@ -1548,6 +1562,7 @@ function woocomm_invfox_get_order_item_variations( $item ) {
     $res = "";
     
     $product = $item->get_product();
+    if (!$product) { return $res; }
     
     // Only for product variation
     if( $product->is_type('variation') ){

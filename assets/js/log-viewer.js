@@ -9,7 +9,7 @@
         // Clear log button
         $('#cebelcabiz-clear-log').on('click', function(e) {
             e.preventDefault(); // Prevent default button behavior
-            console.log('Clear log button clicked'); // Debug log
+
             if (confirm(cebelcabiz_log.confirm_clear)) {
                 clearLog();
             }
@@ -25,8 +25,8 @@
      * Clear the log via AJAX
      */
     function clearLog() {
-        console.log('Clearing log...'); // Debug log
-        console.log('AJAX URL:', cebelcabiz_log.ajax_url); // Debug log
+
+
         
         // Make AJAX request
         $.ajax({
@@ -37,7 +37,7 @@
                 nonce: cebelcabiz_log.nonce
             },
             success: function(response) {
-                console.log('AJAX success:', response); // Debug log
+
                 if (response.success) {
                     alert(response.message || 'Log cleared successfully');
                 } else {
@@ -45,7 +45,7 @@
                 }
             },
             error: function(xhr, status, error) {
-                console.log('AJAX error:', status, error); // Debug log
+
                 alert(cebelcabiz_log.error_text);
             }
         });

@@ -142,14 +142,14 @@ class StrpcAPI {
       curl_setopt($ch, CURLOPT_HTTPHEADER, array(
         'Content-Type: application/x-www-form-urlencoded',
         'User-Agent: PHP-strpc-client',
-        'Authorization: Basic ' . base64_encode($this->apitoken . ':x')
+        'Authorization: Basic ' . base64_encode('[hidden]:x')
       ));
       
       if ($this->debugMode) {
         $debugData = "URL: $url\nHeaders: " . print_r(array(
           'Content-Type: application/x-www-form-urlencoded',
           'User-Agent: PHP-strpc-client',
-          'Authorization: Basic ' . base64_encode($this->apitoken . ':x')
+          'Authorization: Basic [hidden]'
         ), true) . "\nData: $data";
         call_user_func($this->debugHook, $debugData, "API Request");
       }
@@ -253,7 +253,7 @@ class StrpcAPI {
       "Content-Type: application/x-www-form-urlencoded\r\n".
       "User-Agent: PHP-strpc-client\r\n".
       "Content-Length: " . strlen($data) . "\r\n".
-      "Authorization: Basic ".base64_encode($this->apitoken.':x')."\r\n".
+      "Authorization: Basic ".base64_encode('[hidden]:x')."\r\n".
       "Connection: close\r\n\r\n";
     
     $result = '';

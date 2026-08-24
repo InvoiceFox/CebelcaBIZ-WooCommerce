@@ -72,7 +72,7 @@ if ( ! class_exists( 'WC_Integration_Cebelcabiz' ) && class_exists( 'WC_Integrat
             $this->round_calculated_netprice_to = $this->get_option( 'round_calculated_netprice_to', 4 );
             $this->round_calculated_shipping_taxrate_to = $this->get_option( 'round_calculated_shipping_taxrate_to', 0); //*
             $this->from_warehouse_id = $this->get_option( 'from_warehouse_id', 0 );
-            $this->debug_mode       = $this->get_option( 'debug_mode', 'yes' );
+            $this->debug_mode       = $this->get_option( 'debug_mode', 'no' );
             // new options below -- TODO ... can we group them together in interface to make it more clear?
             $this->order_actions_enabled = $this->get_option( 'order_actions_enabled' );
             $this->on_order_on_hold = $this->get_option( 'on_order_on_hold' );
@@ -236,10 +236,15 @@ if ( ! class_exists( 'WC_Integration_Cebelcabiz' ) && class_exists( 'WC_Integrat
             // Check if WooCommerce functions are available
             if (function_exists('wc_get_orders') && function_exists('WC') && is_callable('WC')) {
                 try {
-                    $orders = wc_get_orders(array('limit' => 50, 'status' => array('wc-processing', 'wc-completed')));
+                    $orders = wc_get_orders(array(
+                        'limit'  => 50,
+                        'type'   => 'shop_order',
+                        'status' => array('wc-processing', 'wc-completed')
+                    ));
                     $methods_found = array();
                     
                     foreach($orders as $order) {
+                        if (!$order instanceof WC_Order) { continue; }
                         $method_id = $order->get_payment_method();
                         $method_title = $order->get_payment_method_title();
                         if (!empty($method_id) && !isset($methods_found[$method_id])) {
@@ -329,8 +334,8 @@ if ( ! class_exists( 'WC_Integration_Cebelcabiz' ) && class_exists( 'WC_Integrat
                     'title'             => __( 'Beleženje dogodkov (debug)', 'woocommerce-integration-demo' ),
                     'type'              => 'checkbox',
                     'label'             => __( 'Aktiviraj beleženje dogodkov', 'woocommerce-integration-demo' ),
-                    'description'       => __( 'Aktivira beleženje dogodkov v dnevnik za lažje odkrivanje napak. Dnevnik se nahaja v: ' . WP_CONTENT_DIR . '/cebelcabiz-debug.log', 'woocommerce-integration-demo' ),
-                    'default'           => 'yes',
+                    'description'       => __( 'Aktivira beleženje dogodkov v dnevnik za lažje odkrivanje napak. Dnevnik je shranjen v zaščiteni mapi pod Uploads in se samodejno vrti.', 'woocommerce-integration-demo' ),
+                    'default'           => 'no',
                 ),
           
           
